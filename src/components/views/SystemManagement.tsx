@@ -3,6 +3,7 @@ import { Database, Download, Upload, Cloud, ShieldCheck, Trash2, Activity, Histo
 import { useStore } from '../../context/StoreContext';
 import { supabase } from '@/integrations/supabase/client';
 import { getSyncStatus, subscribeSync, pendingCount, flush } from '@/lib/cloud-sync';
+import { normalizeRole, ROLE_LABELS } from '@/lib/roles';
 
 /** Business data keys cleared by Hard Reset (configuration such as settings, payment-account lists, delivery companies is kept). */
 const RESET_KEYS: Record<string, string> = {
@@ -56,6 +57,12 @@ const StaffAndHistory: React.FC = () => {
     if (error || r?.error) return setMsg(r?.error === 'no_account' ? 'Qofkan marka hore ha sameeyo akoon (Samee Akoon).' : r?.error === 'not_owner' ? 'Kaliya Owner-ka.' : 'Cilad.');
     setNewEmail(''); setMsg('Waa la ku daray.'); void load();
   };
+  const setRole = async (id: string, role: string) => {
+    setMsg('');
+    const { data, error } = await supabase.from('staff_members').update({ role }).eq('user_id', id).select('user_id');
+    if (error || !data?.length) return setMsg('Role could not be saved — only the owner can change roles.');
+    setMsg('Role updated.'); void load();
+  };
   const remove = async (id: string) => {
     if (!window.confirm('Ka saar shaqaalahan?')) return;
     await supabase.rpc('owner_remove_staff', { p_user: id }); void load();
@@ -76,9 +83,16 @@ const StaffAndHistory: React.FC = () => {
         <div className="font-bold text-slate-800">Staff accounts (Shaqaalaha)</div>
         <ul className="text-sm divide-y divide-slate-100">
           {staff.map((m) => (
-            <li key={m.user_id} className="py-1.5 flex justify-between items-center">
-              <span>{m.email || m.user_id.slice(0, 8)} <b className="text-[10px] uppercase text-slate-500">{m.role}</b></span>
-              {m.role !== 'owner' && <button onClick={() => void remove(m.user_id)} className="text-rose-600"><Trash2 className="w-3.5 h-3.5" /></button>}
+            <li key={m.user_id} className="py-1.5 flex justify-between items-center gap-2">
+              <span className="truncate">{m.email || m.user_id.slice(0, 8)}</span>
+              {m.role === 'owner' ? <b className="text-[10px] uppercase text-slate-500">Owner</b> : (
+                <span className="flex items-center gap-2">
+                  <select value={normalizeRole(m.role)} onChange={(e) => void setRole(m.user_id, e.target.value)} className="rounded-lg border border-slate-300 px-1.5 py-0.5 text-xs">
+                    {(['admin', 'cashier', 'inventory'] as const).map((r) => <option key={r} value={r}>{ROLE_LABELS[r]}</option>)}
+                  </select>
+                  <button onClick={() => void remove(m.user_id)} className="text-rose-600"><Trash2 className="w-3.5 h-3.5" /></button>
+                </span>
+              )}
             </li>
           ))}
           {staff.length === 0 && <li className="py-1.5 text-slate-500">No staff yet.</li>}
