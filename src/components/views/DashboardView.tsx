@@ -30,32 +30,89 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate, onOpen
   const [range, setRange] = useState<DateRange>(() => ({ from: subDays(new Date(), 13), to: new Date() }));
   const [draftRange, setDraftRange] = useState<DateRange | undefined>(range);
   const [rangeOpen, setRangeOpen] = useState(false);
+  const [branchFilter, setBranchFilter] = useState<string>('all');
   const start = format(range.from ?? new Date(), 'yyyy-MM-dd');
   const end = format(range.to ?? range.from ?? new Date(), 'yyyy-MM-dd');
-  const byDay = new Map<string, { sales: number; gross: number; income: number; expenses: number }>();
-  const add = (date: string, field: 'sales' | 'gross' | 'income' | 'expenses', value: number) => {
-    const key = date.slice(0, 10);
-    if (key < start || key > end) return;
-    const day = byDay.get(key) ?? { sales: 0, gross: 0, income: 0, expenses: 0 };
-    day[field] += value || 0;
-    byDay.set(key, day);
+  const lengthDays = differenceInCalendarDays(parseISO(end), parseISO(start)) + 1;
+  const prevEnd = format(subDays(parseISO(start), 1), 'yyyy-MM-dd');
+  const prevStart = format(subDays(parseISO(start), lengthDays), 'yyyy-MM-dd');
+  type Day = { sales: number; gross: number; income: number; expenses: number };
+  const compute = (from: string, to: string) => {
+    const map = new Map<string, Day>();
+    const add = (date: string, field: keyof Day, value: number) => {
+      const key = (date || '').slice(0, 10);
+      if (key < from || key > to) return;
+      const day = map.get(key) ?? { sales: 0, gross: 0, income: 0, expenses: 0 };
+      day[field] += value || 0;
+      map.set(key, day);
+    };
+    const showMain = branchFilter === 'all' || branchFilter === 'main';
+    if (showMain) {
+      sales.filter(s => s.status === 'Completed').forEach(s => { add(s.date, 'sales', s.grandTotal); add(s.date, 'gross', s.grossProfit); });
+      orders.filter(o => o.status === 'delivered' && !o.convertedSaleId).forEach(o => add(o.date, 'sales', o.total));
+    }
+    branches.sales.filter(s => branchFilter === 'all' || s.branchId === branchFilter).forEach(s => { add(s.date, 'sales', s.total); add(s.date, 'gross', s.total - s.cost - s.commission); });
+    if (branchFilter === 'all') {
+      incomes.forEach(i => add(i.date, 'income', i.amount));
+      expenses.forEach(e => add(e.date, 'expenses', e.amount));
+    }
+    const total = [...map.values()].reduce((sum, d) => ({ sales: sum.sales + d.sales, gross: sum.gross + d.gross, income: sum.income + d.income, expenses: sum.expenses + d.expenses }), { sales: 0, gross: 0, income: 0, expenses: 0 });
+    return { map, total, net: total.gross + total.income - total.expenses };
   };
-  sales.filter(s => s.status === 'Completed').forEach(s => { add(s.date, 'sales', s.grandTotal); add(s.date, 'gross', s.grossProfit); });
-  orders.filter(o => o.status === 'delivered' && !o.convertedSaleId).forEach(o => add(o.date, 'sales', o.total));
-  branches.sales.forEach(s => { add(s.date, 'sales', s.total); add(s.date, 'gross', s.total - s.cost - s.commission); });
-  incomes.forEach(i => add(i.date, 'income', i.amount));
-  expenses.forEach(e => add(e.date, 'expenses', e.amount));
+  const current = compute(start, end);
+  const previous = compute(prevStart, prevEnd);
+  const byDay = current.map;
   const performanceData = eachDayOfInterval({ start: parseISO(start), end: parseISO(end) }).map(d => {
     const key = format(d, 'yyyy-MM-dd');
     const day = byDay.get(key) ?? { sales: 0, gross: 0, income: 0, expenses: 0 };
-    return { date: format(d, 'MMM d'), fullDate: key, sales: day.sales, profit: day.gross + day.income - day.expenses };
+    return { date: format(d, 'MMM d'), fullDate: key, sales: day.sales, gross: day.gross, income: day.income, expenses: day.expenses, profit: day.gross + day.income - day.expenses };
   });
-  const period = [...byDay.values()].reduce((sum, day) => ({
-    sales: sum.sales + day.sales, gross: sum.gross + day.gross,
-    income: sum.income + day.income, expenses: sum.expenses + day.expenses,
-  }), { sales: 0, gross: 0, income: 0, expenses: 0 });
-  const periodNetProfit = period.gross + period.income - period.expenses;
-  const periodLabel = start === end ? format(parseISO(start), 'MMM d, yyyy') : `${format(parseISO(start), 'MMM d, yyyy')} – ${format(parseISO(end), 'MMM d, yyyy')}`;
+  const period = current.total;
+  const periodNetProfit = current.net;
+  const fmtLabel = (a: string, b: string) => a === b ? format(parseISO(a), 'MMM d, yyyy') : `${format(parseISO(a), 'MMM d, yyyy')} – ${format(parseISO(b), 'MMM d, yyyy')}`;
+  const periodLabel = fmtLabel(start, end);
+  const prevLabel = fmtLabel(prevStart, prevEnd);
+  const branchName = branchFilter === 'all' ? 'All (store + branches)' : branchFilter === 'main' ? 'Main store' : branches.branches.find(b => b.id === branchFilter)?.name ?? 'Branch';
+  const comparison = [
+    { label: 'Sales', now: period.sales, before: previous.total.sales },
+    { label: 'Gross profit', now: period.gross, before: previous.total.gross },
+    { label: 'Expenses', now: period.expenses, before: previous.total.expenses, inverse: true },
+    { label: 'Net profit', now: periodNetProfit, before: previous.net },
+  ];
+  const pct = (now: number, before: number) => before === 0 ? (now === 0 ? 0 : null) : ((now - before) / Math.abs(before)) * 100;
+  const branchRows = [
+    ...(() => { const m = new Map<string, { name: string; sales: number; commission: number; profit: number; count: number }>();
+      branches.branches.forEach(b => m.set(b.id, { name: b.name, sales: 0, commission: 0, profit: 0, count: 0 }));
+      branches.sales.filter(s => s.date >= start && s.date <= end).forEach(s => { const r = m.get(s.branchId) ?? { name: s.branchName, sales: 0, commission: 0, profit: 0, count: 0 }; r.sales += s.total; r.commission += s.commission; r.profit += s.total - s.cost - s.commission; r.count += 1; m.set(s.branchId, r); });
+      return [...m.entries()].map(([id, r]) => ({ id, ...r })); })(),
+  ];
+  const fileBase = `benadir-report-${start}_${end}`;
+  const exportCSV = () => {
+    const esc = (v: string | number) => `"${String(v).replace(/"/g, '""')}"`;
+    const lines = [
+      ['Benadir Store - Sales & Profit Report'], ['Period', periodLabel], ['Filter', branchName], [],
+      ['Date', 'Sales', 'Gross profit', 'Other income', 'Expenses', 'Net profit'],
+      ...performanceData.map(d => [d.fullDate, d.sales.toFixed(2), d.gross.toFixed(2), d.income.toFixed(2), d.expenses.toFixed(2), d.profit.toFixed(2)]),
+      ['TOTAL', period.sales.toFixed(2), period.gross.toFixed(2), period.income.toFixed(2), period.expenses.toFixed(2), periodNetProfit.toFixed(2)],
+      [], ['Comparison', 'This period', 'Previous period', 'Change %'], ['Previous period', prevLabel],
+      ...comparison.map(c => { const p = pct(c.now, c.before); return [c.label, c.now.toFixed(2), c.before.toFixed(2), p === null ? 'new' : p.toFixed(1)]; }),
+      [], ['Branch', 'Sales count', 'Sales', 'Commission', 'Profit'],
+      ...branchRows.map(r => [r.name, r.count, r.sales.toFixed(2), r.commission.toFixed(2), r.profit.toFixed(2)]),
+    ];
+    const blob = new Blob(['\ufeff' + lines.map(l => l.map(esc).join(',')).join('\n')], { type: 'text/csv;charset=utf-8' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `${fileBase}.csv`; a.click(); URL.revokeObjectURL(a.href);
+  };
+  const exportPDF = () => {
+    const w = window.open('', '_blank'); if (!w) { alert('Fadlan oggolow pop-ups si PDF loo soo dejiyo.'); return; }
+    const row = (cells: (string | number)[], tag = 'td') => `<tr>${cells.map(c => `<${tag}>${c}</${tag}>`).join('')}</tr>`;
+    w.document.write(`<!doctype html><html><head><title>${fileBase}</title><style>body{font-family:Arial,sans-serif;padding:24px;color:#111}h1{font-size:20px;margin:0}h2{font-size:14px;margin:20px 0 6px}p{margin:2px 0;font-size:12px;color:#555}table{width:100%;border-collapse:collapse;font-size:11px}td,th{border:1px solid #ccc;padding:4px 6px;text-align:right}td:first-child,th:first-child{text-align:left}th{background:#eee}tfoot td{font-weight:bold}</style></head><body>
+      <h1>Benadir Store — Sales & Profit Report</h1><p>Period: ${periodLabel}</p><p>Filter: ${branchName}</p><p>Previous period: ${prevLabel}</p>
+      <h2>Summary vs previous period</h2><table>${row(['Metric', 'This period', 'Previous', 'Change'], 'th')}${comparison.map(c => { const p = pct(c.now, c.before); return row([c.label, money(c.now), money(c.before), p === null ? 'new' : `${p.toFixed(1)}%`]); }).join('')}</table>
+      <h2>Daily breakdown</h2><table>${row(['Date', 'Sales', 'Gross profit', 'Other income', 'Expenses', 'Net profit'], 'th')}${performanceData.map(d => row([d.fullDate, money(d.sales), money(d.gross), money(d.income), money(d.expenses), money(d.profit)])).join('')}<tfoot>${row(['TOTAL', money(period.sales), money(period.gross), money(period.income), money(period.expenses), money(periodNetProfit)])}</tfoot></table>
+      <h2>Branches</h2><table>${row(['Branch', 'Sales count', 'Sales', 'Commission', 'Profit'], 'th')}${branchRows.length ? branchRows.map(r => row([r.name, r.count, money(r.sales), money(r.commission), money(r.profit)])).join('') : row(['No branches', '', '', '', ''])}</table>
+      <script>window.onload=()=>{window.print();}</script></body></html>`);
+    w.document.close();
+  };
   const setPreset = (days: number) => {
     const next = { from: subDays(new Date(), days - 1), to: new Date() };
     setRange(next);
