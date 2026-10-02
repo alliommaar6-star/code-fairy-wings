@@ -7,3 +7,5 @@
 - [ ] Connect GitHub API (new workspace)
 - [x] GitHub API connected
 - [x] Branches: stronger tracking — overview of all branches, transfer history (e.g. 20 of 1000 to Garoowe), sales & commission per branch
+- [x] Clarify remaining daily target as target minus net profit across dashboard, header, and targets
+- [ ] Tighten dashboard KPI spacing and redesign dashboard and sidebar after visual direction selection
