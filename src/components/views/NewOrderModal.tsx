@@ -107,6 +107,7 @@ export const NewOrderModal: React.FC<NewOrderModalProps> = ({
   useEffect(() => {
     if (!isOpen) return;
     setFulfillmentType(isSaleMode ? "Pickup" : "Delivery");
+    setPayMode(isSaleMode ? "full" : "advance");
   }, [isOpen, isSaleMode]);
 
   // Default payment mode per fulfillment: Pickup/Cargo → Full Payment, Delivery → Hormaris.

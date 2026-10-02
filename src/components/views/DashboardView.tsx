@@ -70,6 +70,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     todayIncome,
     todayExpenses,
     todayProfit,
+    todayNetProfit,
+    todayRemainingTarget,
     todayTarget,
     targetProgressPct,
   } = getTodayStats();
@@ -145,7 +147,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           id="kpi-today-sales"
           title="Today's Sales"
           value={`$${todaySales.toFixed(2)}`}
-          subtitle="Real-time register"
+          subtitle="Completed sales & orders"
           icon={ShoppingCart}
           iconBg="bg-blue-50"
           iconColor="text-blue-600"
@@ -155,8 +157,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         <StatCard
           id="kpi-total-income"
           title="Total Income"
-          value={`$${(todayIncome + totalSales).toFixed(2)}`}
-          subtitle="Sales + commissions"
+          value={`$${todayIncome.toFixed(2)}`}
+          subtitle="Service & other income (today)"
           icon={TrendingUp}
           iconBg="bg-emerald-50"
           iconColor="text-emerald-600"
@@ -177,8 +179,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         <StatCard
           id="kpi-net-profit"
           title="Gross Profit"
-          value={`$${(todayProfit || grossProfit).toFixed(2)}`}
-          subtitle="Margin after COGS"
+          value={`$${todayProfit.toFixed(2)}`}
+          subtitle="Today, after COGS & branch commission"
           icon={DollarSign}
           iconBg="bg-lime-50"
           iconColor="text-lime-700"
@@ -188,10 +190,22 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         />
 
         <StatCard
+          id="kpi-today-net-profit"
+          title="Net Profit (Today)"
+          value={`$${todayNetProfit.toFixed(2)}`}
+          subtitle="Gross profit + income − expenses"
+          icon={DollarSign}
+          iconBg="bg-emerald-50"
+          iconColor="text-emerald-700"
+          highlight
+          onClick={() => onNavigate('reports')}
+        />
+
+        <StatCard
           id="kpi-today-target"
           title="Today's Target"
           value={`$${todayTarget.toFixed(2)}`}
-          subtitle={`${targetProgressPct}% completed ($${Math.max(0, todayTarget - todaySales).toFixed(2)} left)`}
+          subtitle={`${targetProgressPct}% of net profit · Remaining $${todayRemainingTarget.toFixed(2)}`}
           icon={Target}
           iconBg="bg-red-50"
           iconColor="text-red-600"
