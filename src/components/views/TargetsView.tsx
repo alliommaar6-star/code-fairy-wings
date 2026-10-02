@@ -15,7 +15,7 @@ import { StatCard } from "../common/StatCard";
 export const TargetsView: React.FC = () => {
   const { settings, updateSettings, getTodayStats, getPeriodStats, sales } = useStore();
 
-  const { todaySales, todayTarget, targetProgressPct } = getTodayStats();
+  const { todaySales, todayNetProfit, todayTarget, targetProgressPct } = getTodayStats();
   const { totalSales } = getPeriodStats();
 
   const [monthlyTargetInput, setMonthlyTargetInput] = useState(settings.monthlyTarget.toString());
@@ -26,7 +26,7 @@ export const TargetsView: React.FC = () => {
     Math.round((totalSales / (settings.monthlyTarget || 1)) * 100),
   );
 
-  const remainingDaily = Math.max(0, settings.dailyTarget - todaySales);
+  const remainingDaily = Math.max(0, settings.dailyTarget - todayNetProfit);
   const remainingMonthly = Math.max(0, settings.monthlyTarget - totalSales);
 
   const handleSaveTargets = (e: React.FormEvent) => {
