@@ -1,0 +1,6 @@
+{
+  "name": "Benadir Store",
+  "description": "Benadir Store - Enterprise POS, Inventory, Sales, Financial Engine, and Customer Order Portal",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

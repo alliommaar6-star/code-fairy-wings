@@ -1,0 +1,83 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1789665542566,
+      "tag": "0000_customer_payment_portal",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1789665564283,
+      "tag": "0001_fix_portal_rate_hash",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1789665777458,
+      "tag": "0002_admin_regenerate_portal_token",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1789666019049,
+      "tag": "0003_harden_portal_function_grants",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1789666432547,
+      "tag": "0004_portal_publish_order",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1789676023900,
+      "tag": "0005_short_portal_codes",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1789676052257,
+      "tag": "0006_fix_portal_get_order_payload_arg",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1789679194386,
+      "tag": "0007_portal_codes_4_chars",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1790790904410,
+      "tag": "0008_app_state_sync",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1790849673595,
+      "tag": "0009_portal_fulfillment_type_and_link_close",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1790853721303,
+      "tag": "0010_durable_data_staff_and_history",
+      "breakpoints": true
+    }
+  ]
+}

@@ -10,33 +10,53 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as PTokenRouteImport } from './routes/p.$token'
+import { Route as PaymentTokenRouteImport } from './routes/payment.$token'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PTokenRoute = PTokenRouteImport.update({
+  id: '/p/$token',
+  path: '/p/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PaymentTokenRoute = PaymentTokenRouteImport.update({
+  id: '/payment/$token',
+  path: '/payment/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/p/$token': typeof PTokenRoute
+  '/payment/$token': typeof PaymentTokenRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/p/$token': typeof PTokenRoute
+  '/payment/$token': typeof PaymentTokenRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/p/$token': typeof PTokenRoute
+  '/payment/$token': typeof PaymentTokenRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/p/$token' | '/payment/$token'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/p/$token' | '/payment/$token'
+  id: '__root__' | '/' | '/p/$token' | '/payment/$token'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  PTokenRoute: typeof PTokenRoute
+  PaymentTokenRoute: typeof PaymentTokenRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +68,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/p/$token': {
+      id: '/p/$token'
+      path: '/p/$token'
+      fullPath: '/p/$token'
+      preLoaderRoute: typeof PTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/payment/$token': {
+      id: '/payment/$token'
+      path: '/payment/$token'
+      fullPath: '/payment/$token'
+      preLoaderRoute: typeof PaymentTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  PTokenRoute: PTokenRoute,
+  PaymentTokenRoute: PaymentTokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
