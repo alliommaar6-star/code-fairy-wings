@@ -142,3 +142,49 @@
     color: var(--color-foreground);
   }
 }
+
+/* Store operations palette — dashboard and navigation only. */
+:root {
+  --dash-forest: oklch(0.37 0.085 160);
+  --dash-mint: oklch(0.77 0.105 161);
+  --dash-clay: oklch(0.59 0.108 35);
+  --dash-subtle: oklch(0.53 0.022 165);
+  --dash-line: oklch(0.89 0.018 165);
+  --sidebar: oklch(0.975 0.012 165);
+  --sidebar-foreground: oklch(0.24 0.031 165);
+  --sidebar-primary: var(--dash-forest);
+  --sidebar-primary-foreground: oklch(0.99 0.008 165);
+  --sidebar-accent: oklch(0.9 0.039 161);
+  --sidebar-accent-foreground: oklch(0.28 0.07 160);
+  --sidebar-border: var(--dash-line);
+}
+.dark {
+  --dash-forest: oklch(0.72 0.105 161);
+  --dash-mint: oklch(0.77 0.105 161);
+  --dash-clay: oklch(0.7 0.1 35);
+  --dash-subtle: oklch(0.7 0.02 165);
+  --dash-line: oklch(0.36 0.025 165);
+  --sidebar: oklch(0.2 0.025 165);
+  --sidebar-foreground: oklch(0.95 0.012 165);
+  --sidebar-primary: oklch(0.65 0.09 160);
+  --sidebar-primary-foreground: oklch(0.16 0.03 165);
+  --sidebar-accent: oklch(0.32 0.045 161);
+  --sidebar-accent-foreground: oklch(0.96 0.012 165);
+  --sidebar-border: var(--dash-line);
+}
+.dashboard-surface { background: oklch(0.972 0.011 160); font-family: 'Manrope', sans-serif; }
+.dark .dashboard-surface { background: var(--background); }
+.dashboard-heading { font-family: 'Sora', sans-serif; letter-spacing: 0; }
+.dashboard-kicker { font-family: 'Manrope', sans-serif; font-size: 10px; font-weight: 800; letter-spacing: 0; }
+.dashboard-feature, .dashboard-metric, .dashboard-panel, .dashboard-date, .dashboard-action { border-radius: 4px; }
+.dashboard-feature-profit { background: oklch(0.36 0.083 160); }
+.dark .dashboard-feature-profit { background: oklch(0.35 0.08 160); }
+.dashboard-feature-target, .dashboard-feature-summary, .dashboard-metric { background: var(--card); }
+.dashboard-metric:hover, .dashboard-action:hover { border-color: var(--dash-forest); }
+.dashboard-icon-mint { color: var(--dash-forest); }
+.dashboard-icon-teal { color: var(--dash-mint); }
+.dashboard-icon-clay { color: var(--dash-clay); }
+.dashboard-sidebar { font-family: 'Manrope', sans-serif; }
+.dashboard-sidebar-active { box-shadow: inset 3px 0 0 var(--sidebar-primary); }
+.dashboard-sidebar-nav { scrollbar-width: thin; scrollbar-color: var(--sidebar-border) transparent; }
+@media (prefers-reduced-motion: reduce) { .dashboard-surface *, .dashboard-sidebar * { animation-duration: .01ms !important; transition-duration: .01ms !important; } }

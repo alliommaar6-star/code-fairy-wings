@@ -1,60 +1,10 @@
-import React from "react";
-import {
-  LayoutGrid,
-  ShoppingCart,
-  RotateCcw,
-  ClipboardList,
-  Users,
-  Sparkles,
-  Package,
-  ShoppingBag,
-  Building2,
-  Truck,
-  Car,
-  DollarSign,
-  Wallet,
-  Receipt,
-  TrendingUp,
-  BarChart3,
-  Target,
-  BookOpen,
-  ShieldCheck,
-  Settings,
-  Zap,
-  ChevronRight,
-  X,
-  MapPin,
-  LineChart,
-} from "lucide-react";
-import { useStore } from "../../context/StoreContext";
-import { canAccess, useStaffRole } from "@/lib/roles";
+import React from 'react';
+import { LayoutGrid, ShoppingCart, ClipboardList, Users, Sparkles, Package, ShoppingBag, Building2, Truck, Car, DollarSign, Wallet, Receipt, TrendingUp, BarChart3, Target, BookOpen, ShieldCheck, Settings, ChevronRight, X, MapPin, LineChart, Store } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useStore } from '../../context/StoreContext';
+import { canAccess, useStaffRole } from '@/lib/roles';
 
-export type NavSection =
-  | "dashboard"
-  | "sales"
-  | "returns"
-  | "orders"
-  | "customers"
-  | "products"
-  | "inventory"
-  | "purchases"
-  | "suppliers"
-  | "delivery"
-  | "cargo"
-  | "tracking"
-  | "drivers"
-  | "payments"
-  | "accounts"
-  | "expenses"
-  | "income"
-  | "reports"
-  | "targets"
-  | "accounting"
-  | "insights"
-  | "users"
-  | "settings"
-  | "pos";
-
+export type NavSection = 'dashboard' | 'sales' | 'returns' | 'orders' | 'customers' | 'products' | 'inventory' | 'purchases' | 'suppliers' | 'delivery' | 'cargo' | 'tracking' | 'drivers' | 'payments' | 'accounts' | 'expenses' | 'income' | 'reports' | 'targets' | 'accounting' | 'insights' | 'users' | 'settings' | 'pos';
 export interface SidebarProps {
   activeTab?: NavSection;
   setActiveTab?: (tab: NavSection) => void;
@@ -64,178 +14,66 @@ export interface SidebarProps {
   onClose?: () => void;
   onOpenNewSale?: () => void;
 }
+const groups = [
+  { title: 'OVERVIEW', items: [
+    { id: 'dashboard' as NavSection, label: 'Dashboard', icon: LayoutGrid },
+    { id: 'orders' as NavSection, label: 'Sales / Orders', icon: ClipboardList },
+    { id: 'customers' as NavSection, label: 'Customers', icon: Users },
+  ] },
+  { title: 'OPERATIONS', items: [
+    { id: 'products' as NavSection, label: 'Products', icon: Sparkles },
+    { id: 'inventory' as NavSection, label: 'Inventory', icon: Package },
+    { id: 'purchases' as NavSection, label: 'Purchases', icon: ShoppingBag },
+    { id: 'suppliers' as NavSection, label: 'Suppliers', icon: Building2 },
+    { id: 'delivery' as NavSection, label: 'Local Delivery', icon: Truck },
+    { id: 'cargo' as NavSection, label: 'Cargo (Freight)', icon: Truck },
+    { id: 'tracking' as NavSection, label: 'Tracking & Alerts', icon: MapPin },
+    { id: 'drivers' as NavSection, label: 'Delivery', icon: Car },
+  ] },
+  { title: 'FINANCE', items: [
+    { id: 'payments' as NavSection, label: 'Payments', icon: DollarSign },
+    { id: 'accounts' as NavSection, label: 'Payment Accounts', icon: Wallet },
+    { id: 'expenses' as NavSection, label: 'Expenses', icon: Receipt },
+    { id: 'income' as NavSection, label: 'Income', icon: TrendingUp },
+    { id: 'reports' as NavSection, label: 'Reports', icon: BarChart3 },
+    { id: 'targets' as NavSection, label: 'Targets', icon: Target },
+    { id: 'accounting' as NavSection, label: 'Accounting', icon: BookOpen },
+  ] },
+  { title: 'ADMINISTRATION', items: [
+    { id: 'insights' as NavSection, label: 'Stock Advisor (AI)', icon: LineChart },
+    { id: 'users' as NavSection, label: 'Users & Roles', icon: ShieldCheck },
+    { id: 'settings' as NavSection, label: 'Settings', icon: Settings },
+  ] },
+];
 
-export const Sidebar: React.FC<SidebarProps> = ({
-  activeTab: propActiveTab,
-  setActiveTab: propSetActiveTab,
-  activeSection,
-  onSelectSection,
-  isOpen = false,
-  onClose = () => {},
-  onOpenNewSale,
-}) => {
-  const currentTab = activeSection || propActiveTab || "dashboard";
-  const handleSelectTab = onSelectSection || propSetActiveTab || (() => {});
+export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, activeSection, onSelectSection, isOpen = false, onClose = () => {} }) => {
+  const currentTab = activeSection || activeTab || 'dashboard';
+  const handleSelectTab = onSelectSection || setActiveTab || (() => {});
   const { currentUser, settings } = useStore();
   const staffRole = useStaffRole();
-
-  const menuItems = [
-    { id: "dashboard" as NavSection, label: "Dashboard", icon: LayoutGrid },
-    { id: "orders" as NavSection, label: "Sales / Orders", icon: ClipboardList },
-    { id: "customers" as NavSection, label: "Customers", icon: Users },
-    { id: "products" as NavSection, label: "Products", icon: Sparkles },
-    { id: "inventory" as NavSection, label: "Inventory", icon: Package },
-    { id: "purchases" as NavSection, label: "Purchases", icon: ShoppingBag },
-    { id: "suppliers" as NavSection, label: "Suppliers", icon: Building2 },
-    { id: "delivery" as NavSection, label: "Local Delivery", icon: Truck },
-    { id: "cargo" as NavSection, label: "Cargo (Freight)", icon: Truck },
-    { id: "tracking" as NavSection, label: "Tracking & Alerts", icon: MapPin },
-    { id: "drivers" as NavSection, label: "Delivery", icon: Car },
-    { id: "payments" as NavSection, label: "Payments", icon: DollarSign },
-    { id: "accounts" as NavSection, label: "Payment Accounts", icon: Wallet },
-    { id: "expenses" as NavSection, label: "Expenses", icon: Receipt },
-    { id: "income" as NavSection, label: "Income", icon: TrendingUp },
-    { id: "reports" as NavSection, label: "Reports", icon: BarChart3 },
-    { id: "targets" as NavSection, label: "Targets", icon: Target },
-    { id: "accounting" as NavSection, label: "Accounting", icon: BookOpen },
-    { id: "insights" as NavSection, label: "Stock Advisor (AI)", icon: LineChart },
-    { id: "users" as NavSection, label: "Users & Roles", icon: ShieldCheck },
-    { id: "settings" as NavSection, label: "Settings", icon: Settings },
-  ].filter((m) => canAccess(staffRole, m.id));
-
-  const handleSelect = (tab: NavSection) => {
-    handleSelectTab(tab);
-    // Marka shay la doorto, si toos ah u fur boggaas kadibna xir sidebar-ka (mobile iyo desktop labadaba)
-    onClose();
-  };
-
+  const select = (tab: NavSection) => { handleSelectTab(tab); onClose(); };
   React.useEffect(() => {
     if (!isOpen) return;
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        onClose();
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
   }, [isOpen, onClose]);
-
-  return (
-    <>
-      {/* Backdrop — guji meel kasta oo bannaan si aad u xirto (mobile iyo desktop labadaba) */}
-      {isOpen && (
-        <div
-          className="fixed inset-0 bg-slate-950/70 z-40 backdrop-blur-xs transition-opacity duration-300 animate-in fade-in lg:hidden"
-          onClick={onClose}
-          aria-label="Xir Menu-ga"
-        />
-      )}
-
-      <aside
-        className={`fixed top-0 left-0 bottom-0 z-50 w-72 max-w-[85vw] bg-[#0d131f] text-slate-300 flex flex-col shadow-2xl transition-transform duration-300 ease-in-out select-none border-r border-slate-800/80 lg:static lg:z-auto lg:shadow-none lg:pointer-events-auto lg:translate-x-0 ${
-          isOpen ? "translate-x-0" : "-translate-x-full pointer-events-none"
-        }`}
-      >
-        {/* Brand Header */}
-        <div className="p-4 flex items-center justify-between border-b border-slate-800/60">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[#1e293b] border border-amber-500/30 flex items-center justify-center shadow-inner relative group">
-              <Zap className="w-5 h-5 text-amber-400 fill-amber-400" />
-              <div className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            </div>
-            <div>
-              <h1 className="text-white font-bold text-[15px] tracking-tight leading-none flex items-center gap-1.5">
-                {settings.storeName}
-              </h1>
-              <span className="text-slate-400 text-xs font-medium tracking-wide">
-                Online POS • Cycle 1
-              </span>
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/80 transition-colors lg:hidden"
-            title="Xir / Qari Menu-ga (Collapse)"
-            aria-label="Xir / Qari Menu-ga"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Quick Launch POS Button */}
-        <div className="px-3 pt-3">
-          <button
-            id="quick-pos-launch-btn"
-            onClick={() => handleSelect("pos")}
-            className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl font-semibold text-xs tracking-wide transition-all shadow-sm ${
-              currentTab === "pos"
-                ? "bg-[#bef264] text-black font-bold shadow-md shadow-lime-950/20 ring-1 ring-lime-400"
-                : "bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30"
-            }`}
-          >
-            <span className="flex items-center gap-2">
-              <ShoppingCart className="w-4 h-4" />
-              Quick POS Terminal
-            </span>
-            <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-emerald-500/30 text-emerald-300">
-              F2
-            </span>
-          </button>
-        </div>
-
-        {/* Navigation List */}
-        <div className="flex-1 overflow-y-auto px-3 py-3 space-y-0.5">
-          <div className="px-3 py-1.5 text-[11px] font-bold tracking-wider text-slate-400 uppercase">
-            Main Menu
-          </div>
-
-          {menuItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = currentTab === item.id;
-            return (
-              <button
-                key={item.id}
-                id={`sidebar-nav-${item.id}`}
-                onClick={() => handleSelect(item.id)}
-                className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-[13px] font-medium transition-all group ${
-                  isActive
-                    ? "bg-[#bef264] text-black font-semibold shadow-sm"
-                    : "text-slate-300 hover:text-white hover:bg-slate-800/70"
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <Icon
-                    className={`w-4 h-4 transition-transform group-hover:scale-110 ${
-                      isActive ? "text-black" : "text-slate-400 group-hover:text-slate-200"
-                    }`}
-                  />
-                  <span>{item.label}</span>
-                </div>
-                {isActive && <ChevronRight className="w-4 h-4 text-black opacity-80" />}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* User Profile Footer */}
-        <div className="p-3 border-t border-slate-800/80 bg-[#090d16]/70">
-          <div className="flex items-center justify-between p-2 rounded-xl hover:bg-slate-800/60 transition-colors">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-full bg-[#bef264] text-black font-bold text-xs flex items-center justify-center uppercase ring-2 ring-slate-800">
-                {currentUser.name.slice(0, 2)}
-              </div>
-              <div className="leading-tight text-left">
-                <div className="text-white text-xs font-semibold">{currentUser.name}</div>
-                <div className="text-slate-400 text-[11px]">{currentUser.role}</div>
-              </div>
-            </div>
-            <span
-              className="w-2 h-2 rounded-full bg-emerald-400 ring-4 ring-emerald-500/20"
-              title="Online"
-            />
-          </div>
-        </div>
-      </aside>
-    </>
-  );
+  return <>
+    {isOpen && <div className="fixed inset-0 z-40 bg-foreground/55 backdrop-blur-xs lg:hidden" onClick={onClose} aria-label="Xir Menu-ga" />}
+    <aside className={`dashboard-sidebar fixed inset-y-0 left-0 z-50 flex w-64 max-w-[85vw] flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-transform duration-300 lg:static lg:z-auto lg:shrink-0 lg:translate-x-0 lg:pointer-events-auto ${isOpen ? 'translate-x-0' : '-translate-x-full pointer-events-none'}`}>
+      <div className="flex min-h-20 items-center justify-between gap-2 border-b border-sidebar-border px-5">
+        <div className="flex min-w-0 items-center gap-3"><div className="flex h-9 w-9 shrink-0 items-center justify-center bg-sidebar-primary text-sidebar-primary-foreground"><Store className="h-5 w-5" /></div><div className="min-w-0"><div className="dashboard-heading truncate text-[15px] font-bold text-sidebar-foreground">{settings.storeName}</div><div className="dashboard-kicker text-[var(--dash-subtle)]">STORE OPERATIONS</div></div></div>
+        <Button variant="ghost" size="icon" onClick={onClose} className="lg:hidden" aria-label="Xir Menu-ga"><X className="h-4 w-4" /></Button>
+      </div>
+      <div className="px-3 pt-4"><Button id="quick-pos-launch-btn" onClick={() => select('pos')} className="h-10 w-full justify-start bg-sidebar-primary px-3 text-xs font-semibold text-sidebar-primary-foreground shadow-none hover:bg-sidebar-primary/90"><ShoppingCart className="h-4 w-4" />Quick POS <ChevronRight className="ml-auto h-4 w-4" /></Button></div>
+      <nav className="dashboard-sidebar-nav mt-3 flex-1 overflow-y-auto px-3 pb-4" aria-label="Store navigation">
+        {groups.map(group => {
+          const items = group.items.filter(item => canAccess(staffRole, item.id));
+          if (!items.length) return null;
+          return <div key={group.title} className="mb-4"><div className="dashboard-kicker px-3 pb-1.5 pt-2 text-[var(--dash-subtle)]">{group.title}</div><div className="space-y-0.5">{items.map(item => { const Icon = item.icon; const selected = item.id === currentTab || (item.id === 'orders' && ['sales','returns'].includes(currentTab)); return <Button key={item.id} id={`sidebar-nav-${item.id}`} variant="ghost" onClick={() => select(item.id)} aria-current={selected ? 'page' : undefined} className={`dashboard-sidebar-link h-9 w-full justify-start gap-3 px-3 text-[13px] font-medium ${selected ? 'dashboard-sidebar-active bg-sidebar-accent text-sidebar-accent-foreground hover:bg-sidebar-accent' : 'text-sidebar-foreground/75 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground'}`}><Icon className="h-4 w-4" /><span className="truncate">{item.label}</span>{selected && <ChevronRight className="ml-auto h-3.5 w-3.5" />}</Button>; })}</div></div>;
+        })}
+      </nav>
+      <div className="flex items-center gap-3 border-t border-sidebar-border px-5 py-4"><div className="flex h-8 w-8 shrink-0 items-center justify-center bg-sidebar-accent text-xs font-bold uppercase text-sidebar-accent-foreground">{currentUser.name.slice(0, 2)}</div><div className="min-w-0"><div className="truncate text-xs font-semibold text-sidebar-foreground">{currentUser.name}</div><div className="text-[11px] text-[var(--dash-subtle)]">{currentUser.role}</div></div></div>
+    </aside>
+  </>;
 };
