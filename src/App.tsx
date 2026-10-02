@@ -3,7 +3,6 @@ import { StoreProvider, useStore } from "./context/StoreContext";
 import { Sidebar, NavSection } from "./components/layout/Sidebar";
 import { Header } from "./components/layout/Header";
 import { DashboardView } from "./components/views/DashboardView";
-import { SalesView } from "./components/views/SalesView";
 import { PosView } from "./components/views/PosView";
 import { ProductsView } from "./components/views/ProductsView";
 import { InventoryView } from "./components/views/InventoryView";
@@ -28,7 +27,7 @@ import { ReceivePaymentModal } from "./components/views/ReceivePaymentModal";
 import { AccountTransferModal } from "./components/views/AccountTransferModal";
 import { SalesReturnModal } from "./components/views/SalesReturnModal";
 import { ReceiptModal } from "./components/common/ReceiptModal";
-import { OrdersView } from "./components/views/OrdersView";
+import { SalesOrdersView } from "./components/views/SalesOrdersView";
 import { TrackingView } from "./components/views/TrackingView";
 import { AccountantView } from "./components/views/AccountantView";
 import { AlertCenter } from "./components/layout/AlertCenter";
@@ -329,51 +328,28 @@ const MainApp: React.FC = () => {
           )}
 
           {(activeTab === "sales" || activeTab === "orders" || activeTab === "returns") && (
-            <div>
-              <div className="px-6 pt-5 max-w-7xl mx-auto flex gap-2">
-                {(
-                  [
-                    ["orders", "Sales / Orders"],
-                    ["sales", "Invoices & Returns"],
-                  ] as const
-                ).map(([id, label]) => (
-                  <button
-                    key={id}
-                    onClick={() => setActiveTab(id as NavSection)}
-                    className={`px-4 py-2 rounded-xl text-xs font-bold border transition ${activeTab === id || (id === "sales" && activeTab === "returns") ? "bg-slate-900 text-lime-400 border-slate-900" : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"}`}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-              {activeTab === "orders" ? (
-                <OrdersView
-                  openNewSignal={newRecordSignal}
-                  onConvertSale={(orderId) => {
-                    const sale = convertOrderToSale(orderId);
-                    if (sale) setActiveReceiptSale(sale);
-                  }}
-                />
-              ) : (
-                <SalesView
-                  onOpenNewSale={openNewRecord}
-                  onViewReceipt={handleViewReceipt}
-                  onOpenReturn={handleOpenReturn}
-                  onReceivePayment={(sale) => {
-                    const dummyCust: Customer = {
-                      id: sale.customerId,
-                      name: sale.customerName,
-                      phone: sale.customerPhone || "",
-                      balance: sale.remainingBalance,
-                      creditLimit: 1000,
-                      totalPurchases: sale.grandTotal,
-                      status: "active",
-                    };
-                    handleOpenReceivePayment(dummyCust);
-                  }}
-                />
-              )}
-            </div>
+            /* Order and Sale are one flow — a single unified list, no split tabs */
+            <SalesOrdersView
+              openNewSignal={newRecordSignal}
+              onConvertSale={(orderId) => {
+                const sale = convertOrderToSale(orderId);
+                if (sale) setActiveReceiptSale(sale);
+              }}
+              onViewReceipt={handleViewReceipt}
+              onOpenReturn={handleOpenReturn}
+              onReceivePayment={(sale) => {
+                const dummyCust: Customer = {
+                  id: sale.customerId,
+                  name: sale.customerName,
+                  phone: sale.customerPhone || "",
+                  balance: sale.remainingBalance,
+                  creditLimit: 1000,
+                  totalPurchases: sale.grandTotal,
+                  status: "active",
+                };
+                handleOpenReceivePayment(dummyCust);
+              }}
+            />
           )}
 
           {activeTab === "pos" && <PosView onSaleComplete={handleSaleCompleted} />}

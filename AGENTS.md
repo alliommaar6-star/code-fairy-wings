@@ -23,3 +23,4 @@
 - Server/data layer uses Lovable Cloud (Supabase client + app_state sync); never a standalone pg/in-memory backend — Workers cannot reach a local Postgres and memory loses data.
 - Staff roles (owner/admin/cashier/inventory) come from `staff_members.role`; section access is defined once in src/lib/roles.ts and enforced in the sidebar and main view. Why: one source of truth for who sees what.
 - The AI Stock Advisor (insights.functions.ts) receives a browser-built sales/stock snapshot and only advises; it never changes data. Why: numbers stay deterministic.
+- Orders and Sales are one flow: a single SalesOrdersView (src/components/views/SalesOrdersView.tsx) lists orders and sale invoices in one table; the old split SalesView/OrdersView and the "Invoices & Returns" tab were removed. The sidebar "sales"/"returns" ids still route to this view for compatibility. Why: the user treats an order and its sale as the same transaction.

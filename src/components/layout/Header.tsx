@@ -74,7 +74,7 @@ export const Header: React.FC<HeaderProps> = ({
         <button
           id="btn-toggle-sidebar"
           onClick={onToggleSidebar}
-          className="p-2 rounded-xl text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-colors flex items-center gap-1.5 shrink-0 group border border-slate-200/60"
+          className="p-2 rounded-xl text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-colors flex items-center gap-1.5 shrink-0 group border border-slate-200/60 lg:hidden"
           title="Fura Menu-ga (Toggle Navigation Menu)"
           aria-label="Fura Menu-ga"
         >
