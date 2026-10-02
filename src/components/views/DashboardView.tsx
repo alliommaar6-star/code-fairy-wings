@@ -203,9 +203,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
         <StatCard
           id="kpi-today-target"
-          title="Today's Target"
-          value={`$${todayTarget.toFixed(2)}`}
-          subtitle={`${targetProgressPct}% of net profit · Remaining $${todayRemainingTarget.toFixed(2)}`}
+          title="Remaining Target"
+          value={`$${todayRemainingTarget.toFixed(2)}`}
+          subtitle={`Target $${todayTarget.toFixed(2)} − Net profit $${todayNetProfit.toFixed(2)}`}
           icon={Target}
           iconBg="bg-red-50"
           iconColor="text-red-600"
@@ -500,7 +500,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 <div>
                   <div className="text-slate-400 text-[11px]">Today's Benchmark</div>
                   <div className="text-base font-black text-white">
-                    ${todaySales.toFixed(2)} / ${todayTarget.toFixed(2)}
+                    ${todayNetProfit.toFixed(2)} / ${todayTarget.toFixed(2)}
                   </div>
                 </div>
                 <div>

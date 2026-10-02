@@ -52,7 +52,7 @@ export const Header: React.FC<HeaderProps> = ({
   const quickAddRef = useRef<HTMLDivElement>(null);
   const notifRef = useRef<HTMLDivElement>(null);
 
-  const { todaySales, todayTarget } = getTodayStats();
+  const { todayNetProfit, todayTarget, todayRemainingTarget } = getTodayStats();
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -117,7 +117,7 @@ export const Header: React.FC<HeaderProps> = ({
             Today Target
           </span>
           <span className="bg-white/20 px-1.5 py-0.5 rounded-full text-[11px] font-bold">
-            ${todaySales.toFixed(2)} / ${todayTarget.toFixed(2)}
+            ${todayRemainingTarget.toFixed(2)} remaining · ${todayNetProfit.toFixed(2)} / ${todayTarget.toFixed(2)}
           </span>
         </button>
 

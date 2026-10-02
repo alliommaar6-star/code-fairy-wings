@@ -15,7 +15,7 @@ import { StatCard } from "../common/StatCard";
 export const TargetsView: React.FC = () => {
   const { settings, updateSettings, getTodayStats, getPeriodStats, sales } = useStore();
 
-  const { todaySales, todayNetProfit, todayTarget, targetProgressPct } = getTodayStats();
+  const { todayNetProfit, todayTarget, todayRemainingTarget, targetProgressPct } = getTodayStats();
   const { totalSales } = getPeriodStats();
 
   const [monthlyTargetInput, setMonthlyTargetInput] = useState(settings.monthlyTarget.toString());
@@ -26,7 +26,7 @@ export const TargetsView: React.FC = () => {
     Math.round((totalSales / (settings.monthlyTarget || 1)) * 100),
   );
 
-  const remainingDaily = Math.max(0, settings.dailyTarget - todayNetProfit);
+  const remainingDaily = todayRemainingTarget;
   const remainingMonthly = Math.max(0, settings.monthlyTarget - totalSales);
 
   const handleSaveTargets = (e: React.FormEvent) => {
@@ -57,20 +57,20 @@ export const TargetsView: React.FC = () => {
         <StatCard
           title="Today's Target"
           value={`$${settings.dailyTarget.toFixed(2)}`}
-          subtitle={`Day 15 quota`}
+           subtitle={`Remaining $${remainingDaily.toFixed(2)}`}
           icon={Target}
           iconBg="bg-red-50"
           iconColor="text-red-600"
         />
 
         <StatCard
-          title="Today's Sales"
-          value={`$${todaySales.toFixed(2)}`}
+           title="Today's Net Profit"
+           value={`$${todayNetProfit.toFixed(2)}`}
           subtitle={`${targetProgressPct}% completed`}
           icon={TrendingUp}
           iconBg="bg-emerald-50"
           iconColor="text-emerald-600"
-          highlight={todaySales >= settings.dailyTarget}
+           highlight={todayNetProfit >= todayTarget}
         />
 
         <StatCard
@@ -98,9 +98,9 @@ export const TargetsView: React.FC = () => {
         <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="font-bold text-slate-900 text-sm">Daily Sales Pace (Day 15 of 30)</h3>
+               <h3 className="font-bold text-slate-900 text-sm">Daily Net Profit Progress</h3>
               <p className="text-xs text-slate-500">
-                Current day sales velocity versus required run-rate
+                 Today's net profit against the daily target
               </p>
             </div>
             <span className="text-lg font-black text-slate-900">{targetProgressPct}%</span>
@@ -114,8 +114,8 @@ export const TargetsView: React.FC = () => {
           </div>
 
           <div className="flex justify-between text-xs text-slate-600 pt-1">
-            <span>Achieved: ${todaySales.toFixed(2)}</span>
-            <span>Target: ${settings.dailyTarget.toFixed(2)}</span>
+             <span>Net profit: ${todayNetProfit.toFixed(2)}</span>
+             <span>Target: ${todayTarget.toFixed(2)}</span>
           </div>
 
           {remainingDaily > 0 ? (
@@ -128,7 +128,7 @@ export const TargetsView: React.FC = () => {
           ) : (
             <div className="p-3 bg-emerald-50 rounded-xl text-xs text-emerald-800 flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-              <span>Congratulations! Today's sales target has been exceeded!</span>
+               <span>Today's net profit target has been reached!</span>
             </div>
           )}
         </div>
