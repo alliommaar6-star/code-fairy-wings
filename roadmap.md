@@ -8,4 +8,4 @@
 - [x] Branches: stronger tracking — overview of all branches, transfer history (e.g. 20 of 1000 to Garoowe), sales & commission per branch
 - [x] Clarify remaining daily target as target minus net profit across dashboard, header, and targets
 - [x] Tighten dashboard KPI spacing and redesign dashboard and sidebar with a compact store-operations style
-- [ ] Dashboard date-range filter for sales/profit totals and day-by-day comparison chart
+- [x] Dashboard date-range filter for sales/profit totals and day-by-day comparison chart
