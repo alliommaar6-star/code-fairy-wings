@@ -1,8 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ShoppingCart, TrendingUp, TrendingDown, DollarSign, Target, Wallet, Users, Package, Plus, ArrowUpRight, Truck, ChevronRight, Building2, Sparkles, Receipt, CalendarDays } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { eachDayOfInterval, format, parseISO, subDays } from 'date-fns';
+import type { DateRange } from 'react-day-picker';
 import { useStore } from '../../context/StoreContext';
+import { useBranches } from '@/lib/branch-store';
 import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import type { NavSection } from '../layout/Sidebar';
 
 interface DashboardViewProps {
@@ -18,20 +23,51 @@ interface DashboardViewProps {
 const money = (n: number) => `$${n.toFixed(2)}`;
 
 export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate, onOpenNewSale, onOpenNewExpense, onOpenNewIncome, onOpenReceivePayment, onOpenNewDelivery, onOpenNewAccount }) => {
-  const { currentUser, getTodayStats, getPeriodStats, sales, products, settings } = useStore();
-  const { todaySales, todayIncome, todayExpenses, todayProfit, todayNetProfit, todayRemainingTarget, todayTarget, targetProgressPct } = getTodayStats();
+  const { currentUser, getTodayStats, getPeriodStats, sales, orders, incomes, expenses, products } = useStore();
+  const { todayNetProfit, todayRemainingTarget, todayTarget, targetProgressPct } = getTodayStats();
   const { totalSales, totalRemainingDebt, totalCashInHand, totalStockValueSelling } = getPeriodStats();
-  const performanceData = Array.from({ length: 14 }, (_, i) => {
-    const d = new Date(); d.setDate(d.getDate() - (13 - i));
-    const key = d.toISOString().slice(0, 10);
-    const day = sales.filter(x => (x.date || '').slice(0, 10) === key && x.status === 'Completed');
-    return { date: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), sales: day.reduce((a, x) => a + (x.grandTotal || 0), 0), profit: day.reduce((a, x) => a + (x.grossProfit || 0), 0) };
+  const branches = useBranches();
+  const [range, setRange] = useState<DateRange>(() => ({ from: subDays(new Date(), 13), to: new Date() }));
+  const [draftRange, setDraftRange] = useState<DateRange | undefined>(range);
+  const [rangeOpen, setRangeOpen] = useState(false);
+  const start = format(range.from ?? new Date(), 'yyyy-MM-dd');
+  const end = format(range.to ?? range.from ?? new Date(), 'yyyy-MM-dd');
+  const byDay = new Map<string, { sales: number; gross: number; income: number; expenses: number }>();
+  const add = (date: string, field: 'sales' | 'gross' | 'income' | 'expenses', value: number) => {
+    const key = date.slice(0, 10);
+    if (key < start || key > end) return;
+    const day = byDay.get(key) ?? { sales: 0, gross: 0, income: 0, expenses: 0 };
+    day[field] += value || 0;
+    byDay.set(key, day);
+  };
+  sales.filter(s => s.status === 'Completed').forEach(s => { add(s.date, 'sales', s.grandTotal); add(s.date, 'gross', s.grossProfit); });
+  orders.filter(o => o.status === 'delivered' && !o.convertedSaleId).forEach(o => add(o.date, 'sales', o.total));
+  branches.sales.forEach(s => { add(s.date, 'sales', s.total); add(s.date, 'gross', s.total - s.cost - s.commission); });
+  incomes.forEach(i => add(i.date, 'income', i.amount));
+  expenses.forEach(e => add(e.date, 'expenses', e.amount));
+  const performanceData = eachDayOfInterval({ start: parseISO(start), end: parseISO(end) }).map(d => {
+    const key = format(d, 'yyyy-MM-dd');
+    const day = byDay.get(key) ?? { sales: 0, gross: 0, income: 0, expenses: 0 };
+    return { date: format(d, 'MMM d'), fullDate: key, sales: day.sales, profit: day.gross + day.income - day.expenses };
   });
+  const period = [...byDay.values()].reduce((sum, day) => ({
+    sales: sum.sales + day.sales, gross: sum.gross + day.gross,
+    income: sum.income + day.income, expenses: sum.expenses + day.expenses,
+  }), { sales: 0, gross: 0, income: 0, expenses: 0 });
+  const periodNetProfit = period.gross + period.income - period.expenses;
+  const periodLabel = start === end ? format(parseISO(start), 'MMM d, yyyy') : `${format(parseISO(start), 'MMM d, yyyy')} – ${format(parseISO(end), 'MMM d, yyyy')}`;
+  const setPreset = (days: number) => {
+    const next = { from: subDays(new Date(), days - 1), to: new Date() };
+    setRange(next);
+    setDraftRange(next);
+    setRangeOpen(false);
+  };
+  const recentSales = sales.filter(s => s.status === 'Completed' && s.date.slice(0, 10) >= start && s.date.slice(0, 10) <= end).slice(0, 4);
   const metrics = [
-    { id: 'kpi-today-sales', label: "Today's Sales", value: todaySales, note: 'Completed sales & orders', icon: ShoppingCart, to: 'sales' as NavSection, tone: 'mint' },
-    { id: 'kpi-total-income', label: 'Other Income', value: todayIncome, note: 'Services & other income', icon: TrendingUp, to: 'income' as NavSection, tone: 'teal' },
-    { id: 'kpi-total-expenses', label: "Today's Expenses", value: todayExpenses, note: 'Operating costs', icon: TrendingDown, to: 'expenses' as NavSection, tone: 'clay' },
-    { id: 'kpi-net-profit', label: 'Gross Profit', value: todayProfit, note: 'After cost & commissions', icon: DollarSign, to: 'reports' as NavSection, tone: 'mint' },
+    { id: 'kpi-today-sales', label: 'Sales', value: period.sales, note: 'Completed sales & orders', icon: ShoppingCart, to: 'sales' as NavSection, tone: 'mint' },
+    { id: 'kpi-total-income', label: 'Other Income', value: period.income, note: 'Services & other income', icon: TrendingUp, to: 'income' as NavSection, tone: 'teal' },
+    { id: 'kpi-total-expenses', label: 'Expenses', value: period.expenses, note: 'Operating costs', icon: TrendingDown, to: 'expenses' as NavSection, tone: 'clay' },
+    { id: 'kpi-net-profit', label: 'Gross Profit', value: period.gross, note: 'After cost & commissions', icon: DollarSign, to: 'reports' as NavSection, tone: 'mint' },
     { id: 'kpi-cash-in-hand', label: 'Cash in Hand', value: totalCashInHand, note: 'Drawer & accounts', icon: Wallet, to: 'accounts' as NavSection, tone: 'teal' },
     { id: 'kpi-receivables-debt', label: 'Receivables', value: totalRemainingDebt, note: 'Customer credit', icon: Users, to: 'customers' as NavSection, tone: 'clay' },
     { id: 'kpi-stock-valuation', label: 'Stock Value', value: totalStockValueSelling, note: `${products.length} active products`, icon: Package, to: 'inventory' as NavSection, tone: 'mint' },
