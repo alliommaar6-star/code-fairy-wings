@@ -9,3 +9,4 @@
 - [x] Clarify remaining daily target as target minus net profit across dashboard, header, and targets
 - [x] Tighten dashboard KPI spacing and redesign dashboard and sidebar with a compact store-operations style
 - [x] Dashboard date-range filter for sales/profit totals and day-by-day comparison chart
+- [x] Dashboard: PDF/CSV export, previous-period comparison, per-branch filter
