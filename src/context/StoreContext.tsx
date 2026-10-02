@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { branchTotalsFor } from "../lib/branch-store";
 import { nextCode, uniqueCode } from "../utils/codes";
 import {
   Product,
@@ -208,6 +209,9 @@ interface StoreContextType {
     todayIncome: number;
     todayExpenses: number;
     todayProfit: number;
+    todayNetProfit: number;
+    todayRemainingTarget: number;
+    todayBranchCommission: number;
     todaySalesCount: number;
     todayTarget: number;
     targetProgressPct: number;
@@ -4213,21 +4217,32 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   // Financial Calculations
   const getTodayStats = () => {
-    const todayStr = "2026-09-15"; // current session date
-    const todaySalesList = sales.filter((s) => s.date === todayStr && s.status !== "Cancelled");
-    const todaySales = todaySalesList.reduce((sum, s) => sum + s.grandTotal, 0);
-    const todayProfit = todaySalesList.reduce((sum, s) => sum + s.grossProfit, 0);
+    const todayStr = new Date().toISOString().slice(0, 10);
+    // Today's Sales = only completed sales + delivered orders (not yet converted). Income is separate.
+    const todaySalesList = sales.filter((s) => s.date === todayStr && s.status === "Completed");
+    const deliveredOrders = orders.filter(
+      (o) => o.date === todayStr && o.status === "delivered" && !o.convertedSaleId,
+    );
+    const branch = branchTotalsFor(todayStr);
+    const todaySales =
+      todaySalesList.reduce((sum, s) => sum + s.grandTotal, 0) +
+      deliveredOrders.reduce((sum, o) => sum + o.total, 0) +
+      branch.total;
+    const todayProfit = todaySalesList.reduce((sum, s) => sum + s.grossProfit, 0) + branch.profit;
     const todayExpenses = expenses
       .filter((e) => e.date === todayStr)
       .reduce((sum, e) => sum + e.amount, 0);
     const todayIncome = incomes
       .filter((i) => i.date === todayStr)
       .reduce((sum, i) => sum + i.amount, 0);
+    const todayNetProfit = todayProfit + todayIncome - todayExpenses;
 
     const todayTarget = settings.dailyTarget || 0;
+    // Daily target is measured against net profit.
+    const todayRemainingTarget = Math.max(0, todayTarget - todayNetProfit);
     const targetProgressPct = Math.min(
       100,
-      todayTarget > 0 ? Math.round((todaySales / todayTarget) * 100) : 0,
+      todayTarget > 0 ? Math.max(0, Math.round((todayNetProfit / todayTarget) * 100)) : 0,
     );
 
     return {
@@ -4235,7 +4250,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       todayIncome,
       todayExpenses,
       todayProfit,
-      todaySalesCount: todaySalesList.length,
+      todayNetProfit,
+      todayRemainingTarget,
+      todayBranchCommission: branch.commission,
+      todaySalesCount: todaySalesList.length + deliveredOrders.length + branch.count,
       todayTarget,
       targetProgressPct,
     };
