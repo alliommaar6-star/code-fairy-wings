@@ -39,7 +39,6 @@ export const NewOrderModal: React.FC<NewOrderModalProps> = ({
   onOrderCreated,
 }) => {
   const { products, customers, drivers, createOrder, addCustomer, orders, sales } = useStore();
-  const [recordType, setRecordType] = useState<"order" | "sale">("order");
   const [recordCode, setRecordCode] = useState<string>("");
   const suggestedCode = nextCode("SO", [
     ...orders.map((o) => o.orderNo),
@@ -296,7 +295,8 @@ export const NewOrderModal: React.FC<NewOrderModalProps> = ({
     });
 
     if (onOrderCreated) {
-      onOrderCreated(newOrder, recordType === "sale");
+      // Order iyo Sale waa hal xabo — mar walba waa iib toos ah.
+      onOrderCreated(newOrder, true);
     }
     setRecordCode("");
     onClose();
@@ -331,25 +331,8 @@ export const NewOrderModal: React.FC<NewOrderModalProps> = ({
 
         {/* Modal Body */}
         <form onSubmit={handleSubmitOrder} className="flex-1 overflow-y-auto p-6 space-y-6">
-          {/* Record type + ID */}
+          {/* Record ID */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="grid grid-cols-2 gap-2">
-              {(
-                [
-                  ["order", "Dalab (Order)"],
-                  ["sale", "Iib Toos ah (Sale)"],
-                ] as const
-              ).map(([id, label]) => (
-                <button
-                  key={id}
-                  type="button"
-                  onClick={() => setRecordType(id)}
-                  className={`px-3 py-2.5 rounded-xl border text-xs font-bold transition ${recordType === id ? "bg-slate-900 text-lime-400 border-slate-900" : "bg-slate-50 text-slate-700 border-slate-300 hover:bg-slate-100"}`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
             <div className="flex items-center gap-2">
               <label className="text-[11px] font-bold text-slate-600 whitespace-nowrap">ID:</label>
               <input
