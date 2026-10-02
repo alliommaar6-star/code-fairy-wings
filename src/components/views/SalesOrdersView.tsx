@@ -22,6 +22,7 @@ import {
 import { useStore } from "../../context/StoreContext";
 import { Order, Sale } from "../../types";
 import { NewOrderModal } from "./NewOrderModal";
+import { BranchSalesPanel } from "./BranchSalesPanel";
 import PortalLinkModal from "../portal/PortalLinkModal";
 import { CustomerOrderPortalModal } from "./CustomerOrderPortalModal";
 import { AdminOrderDetailModal } from "./AdminOrderDetailModal";
@@ -63,12 +64,13 @@ export const SalesOrdersView: React.FC<SalesOrdersViewProps> = ({
   } = useStore();
 
   const [searchTerm, setSearchTerm] = useState("");
-  const [kindFilter, setKindFilter] = useState<"all" | "orders" | "sales">("all");
+  const [kindFilter, setKindFilter] = useState<"all" | "orders" | "sales" | "branches">("sales");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [fulfillmentFilter, setFulfillmentFilter] = useState<string>("all");
 
   // Modals
   const [isNewOrderOpen, setIsNewOrderOpen] = useState(false);
+  const [newMode, setNewMode] = useState<"sale" | "order">("sale");
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [adminDetailOrder, setAdminDetailOrder] = useState<Order | null>(null);
   const [linkModalOrder, setLinkModalOrder] = useState<Order | null>(null);
@@ -115,13 +117,18 @@ export const SalesOrdersView: React.FC<SalesOrdersViewProps> = ({
   const rows = useMemo<Row[]>(() => {
     const q = searchTerm.toLowerCase();
     const list: Row[] = [];
+    if (kindFilter === "branches") return [];
     if (kindFilter !== "sales") {
-      orders.forEach((o) =>
+      orders.filter((o) => o.fulfillmentType !== "Pickup").forEach((o) =>
         list.push({ kind: "order", key: `o-${o.id}`, ts: tsOf(o.date, o.time), order: o }),
       );
     }
     if (kindFilter !== "orders") {
-      sales.forEach((s) =>
+      sales
+        .filter((s) =>
+          kindFilter === "sales" ? s.fulfillmentType === "Pickup" : kindFilter === "orders" ? s.fulfillmentType !== "Pickup" : true,
+        )
+        .forEach((s) =>
         list.push({ kind: "sale", key: `s-${s.id}`, ts: tsOf(s.date, s.time), sale: s }),
       );
     }
@@ -202,11 +209,18 @@ export const SalesOrdersView: React.FC<SalesOrdersViewProps> = ({
 
         <div className="flex items-center gap-2.5">
           <button
+            id="create-new-sale-btn"
+            onClick={() => { setNewMode("sale"); setIsNewOrderOpen(true); }}
+            className="px-4 py-2.5 bg-lime-400 hover:bg-lime-300 text-slate-900 font-bold text-xs rounded-xl shadow-md transition flex items-center gap-2"
+          >
+            <Plus className="w-4 h-4" /> Iib Toos ah (Sale)
+          </button>
+          <button
             id="create-new-order-btn"
-            onClick={() => setIsNewOrderOpen(true)}
+            onClick={() => { setNewMode("order"); setIsNewOrderOpen(true); }}
             className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-lime-400 font-bold text-xs rounded-xl shadow-md transition flex items-center gap-2"
           >
-            <Plus className="w-4 h-4 text-lime-400" />+ Iib Cusub (Order / Sale)
+            <Truck className="w-4 h-4" /> Dalab (Order)
           </button>
         </div>
       </div>
@@ -288,9 +302,10 @@ export const SalesOrdersView: React.FC<SalesOrdersViewProps> = ({
           <div className="flex items-center gap-1.5 text-xs font-medium">
             {(
               [
+                ["sales", "Iib Toos ah"],
+                ["orders", "Dalabka (Delivery/Cargo)"],
                 ["all", "Dhammaan"],
-                ["orders", "Dalabka"],
-                ["sales", "Iibka"],
+                ["branches", "Branches"],
               ] as const
             ).map(([f, label]) => (
               <button
@@ -348,8 +363,10 @@ export const SalesOrdersView: React.FC<SalesOrdersViewProps> = ({
         </div>
       </div>
 
+      {kindFilter === "branches" && <BranchSalesPanel />}
+
       {/* Unified Orders + Sales Table */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
+      <div hidden={kindFilter === "branches"} className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead className="bg-slate-100/80 text-slate-600 font-semibold border-b border-slate-200 uppercase tracking-wider text-[11px]">
@@ -412,13 +429,16 @@ export const SalesOrdersView: React.FC<SalesOrdersViewProps> = ({
       {/* New Order Modal */}
       <NewOrderModal
         isOpen={isNewOrderOpen}
+        mode={newMode}
         onClose={() => setIsNewOrderOpen(false)}
         onOrderCreated={(createdOrder, asSale) => {
-          // Order and Sale are one record: every new order becomes a sale automatically.
-          const showLink = !asSale && createdOrder.fulfillmentType !== "Pickup";
-          setPendingReceipt(!showLink);
-          setPendingSaleId(createdOrder.id);
-          if (asSale || createdOrder.fulfillmentType === "Pickup") return;
+          // Direct sale (Pickup, full payment) → becomes a sale with receipt.
+          // Order (Delivery/Cargo) stays an order and gets its customer portal link.
+          if (asSale) {
+            setPendingReceipt(true);
+            setPendingSaleId(createdOrder.id);
+            return;
+          }
           setLinkModalOrder(createdOrder);
           setIsLinkModalOpen(true);
         }}
