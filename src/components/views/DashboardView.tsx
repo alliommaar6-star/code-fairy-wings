@@ -1,38 +1,9 @@
 import React from 'react';
-import {
-  ShoppingCart,
-  TrendingUp,
-  TrendingDown,
-  DollarSign,
-  Target,
-  Wallet,
-  Users,
-  Package,
-  Plus,
-  ArrowUpRight,
-  Truck,
-  CheckCircle2,
-  Clock,
-  ChevronRight,
-  Building2,
-  RefreshCw,
-  Sparkles,
-} from 'lucide-react';
+import { ShoppingCart, TrendingUp, TrendingDown, DollarSign, Target, Wallet, Users, Package, Plus, ArrowUpRight, Truck, ChevronRight, Building2, Sparkles, Receipt, CalendarDays } from 'lucide-react';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { useStore } from '../../context/StoreContext';
-import { StatCard } from '../common/StatCard';
-import { NavSection } from '../layout/Sidebar';
-import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-} from 'recharts';
+import { Button } from '@/components/ui/button';
+import type { NavSection } from '../layout/Sidebar';
 
 interface DashboardViewProps {
   onNavigate: (tab: NavSection) => void;
@@ -44,530 +15,85 @@ interface DashboardViewProps {
   onOpenNewAccount: () => void;
 }
 
-export const DashboardView: React.FC<DashboardViewProps> = ({
-  onNavigate,
-  onOpenNewSale,
-  onOpenNewExpense,
-  onOpenNewIncome,
-  onOpenReceivePayment,
-  onOpenNewDelivery,
-  onOpenNewAccount,
-}) => {
-  const {
-    currentUser,
-    getTodayStats,
-    getPeriodStats,
-    sales,
-    drivers,
-    accounts,
-    customers,
-    products,
-    settings,
-  } = useStore();
+const money = (n: number) => `$${n.toFixed(2)}`;
 
-  const {
-    todaySales,
-    todayIncome,
-    todayExpenses,
-    todayProfit,
-    todayNetProfit,
-    todayRemainingTarget,
-    todayTarget,
-    targetProgressPct,
-  } = getTodayStats();
-
-  const {
-    totalSales,
-    totalPaid,
-    totalRemainingDebt,
-    grossProfit,
-    totalExpenses,
-    netProfit,
-    totalCashInHand,
-    totalStockValueSelling,
-  } = getPeriodStats();
-
-  // Real chart data: last 14 days from actual sales (no sample numbers).
+export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate, onOpenNewSale, onOpenNewExpense, onOpenNewIncome, onOpenReceivePayment, onOpenNewDelivery, onOpenNewAccount }) => {
+  const { currentUser, getTodayStats, getPeriodStats, sales, products, settings } = useStore();
+  const { todaySales, todayIncome, todayExpenses, todayProfit, todayNetProfit, todayRemainingTarget, todayTarget, targetProgressPct } = getTodayStats();
+  const { totalSales, totalRemainingDebt, totalCashInHand, totalStockValueSelling } = getPeriodStats();
   const performanceData = Array.from({ length: 14 }, (_, i) => {
     const d = new Date(); d.setDate(d.getDate() - (13 - i));
     const key = d.toISOString().slice(0, 10);
-    const day = sales.filter((x) => (x.date || '').slice(0, 10) === key);
-    return {
-      date: d.toLocaleDateString('en-US', { month: 'short', day: '2-digit' }),
-      sales: Math.round(day.reduce((a, x) => a + (x.grandTotal || 0), 0) * 100) / 100,
-      expenses: 0,
-      profit: Math.round(day.reduce((a, x) => a + (x.grossProfit || 0), 0) * 100) / 100,
-    };
+    const day = sales.filter(x => (x.date || '').slice(0, 10) === key && x.status === 'Completed');
+    return { date: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), sales: day.reduce((a, x) => a + (x.grandTotal || 0), 0), profit: day.reduce((a, x) => a + (x.grossProfit || 0), 0) };
   });
-
-  // Financial summary donut data
-  const donutData = [
-    { name: 'Cash', value: Math.max(10, totalCashInHand), color: '#10b981' }, // emerald
-    { name: 'Receivables', value: Math.max(5, totalRemainingDebt), color: '#f59e0b' }, // amber
-    { name: 'Capital (Stock)', value: Math.max(20, totalStockValueSelling), color: '#6366f1' }, // indigo
+  const metrics = [
+    { id: 'kpi-today-sales', label: "Today's Sales", value: todaySales, note: 'Completed sales & orders', icon: ShoppingCart, to: 'sales' as NavSection, tone: 'mint' },
+    { id: 'kpi-total-income', label: 'Other Income', value: todayIncome, note: 'Services & other income', icon: TrendingUp, to: 'income' as NavSection, tone: 'teal' },
+    { id: 'kpi-total-expenses', label: "Today's Expenses", value: todayExpenses, note: 'Operating costs', icon: TrendingDown, to: 'expenses' as NavSection, tone: 'clay' },
+    { id: 'kpi-net-profit', label: 'Gross Profit', value: todayProfit, note: 'After cost & commissions', icon: DollarSign, to: 'reports' as NavSection, tone: 'mint' },
+    { id: 'kpi-cash-in-hand', label: 'Cash in Hand', value: totalCashInHand, note: 'Drawer & accounts', icon: Wallet, to: 'accounts' as NavSection, tone: 'teal' },
+    { id: 'kpi-receivables-debt', label: 'Receivables', value: totalRemainingDebt, note: 'Customer credit', icon: Users, to: 'customers' as NavSection, tone: 'clay' },
+    { id: 'kpi-stock-valuation', label: 'Stock Value', value: totalStockValueSelling, note: `${products.length} active products`, icon: Package, to: 'inventory' as NavSection, tone: 'mint' },
   ];
-
+  const actions = [
+    { label: 'New Sale', icon: ShoppingCart, action: onOpenNewSale },
+    { label: 'Quick POS', icon: Sparkles, action: () => onNavigate('pos') },
+    { label: 'New Expense', icon: TrendingDown, action: onOpenNewExpense },
+    { label: 'New Purchase', icon: Building2, action: () => onNavigate('purchases') },
+    { label: 'Add Income', icon: TrendingUp, action: onOpenNewIncome },
+    { label: 'Collection', icon: Receipt, action: onOpenReceivePayment },
+    { label: 'New Delivery', icon: Truck, action: onOpenNewDelivery },
+    { label: 'Transfer', icon: Wallet, action: onOpenNewAccount },
+  ];
+  const assets = [
+    { name: 'Cash in Hand', value: totalCashInHand, color: 'var(--dash-mint)' },
+    { name: 'Receivables', value: totalRemainingDebt, color: 'var(--dash-clay)' },
+    { name: 'Stock Value', value: totalStockValueSelling, color: 'var(--dash-forest)' },
+  ];
+  const hasAssets = assets.some(x => x.value > 0);
+  const pool = assets.reduce((sum, x) => sum + x.value, 0);
   return (
-    <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto">
-      {/* Top Banner / Commercial Engine Header */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-              Good day, {currentUser.name}! 👋
-            </h2>
-            <span className="bg-lime-100 text-lime-800 text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full">
-              Cycle 1 Active
-            </span>
-          </div>
-          <p className="text-xs sm:text-sm text-slate-500 flex items-center gap-2">
-            <span>Commercial engine: Sep 15, 2026</span>
-            <span className="w-1 h-1 rounded-full bg-slate-300" />
-            <span className="text-emerald-600 font-semibold flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              Auto-balancing & Stock Ready
-            </span>
-          </p>
-        </div>
-
-        {/* Financial Period Pills */}
-        <div className="flex flex-wrap items-center gap-2 text-xs">
-          <div className="px-3 py-1.5 bg-slate-100 rounded-xl font-semibold text-slate-700">
-            Sep 01, 2026 — Sep 30, 2026
-          </div>
-          <div className="px-3 py-1.5 bg-slate-900 text-white rounded-xl font-bold">
-            DAY 15 OF 30
-          </div>
-        </div>
-      </div>
-
-      {/* 8 Master KPI Metrics Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <StatCard
-          id="kpi-today-sales"
-          title="Today's Sales"
-          value={`$${todaySales.toFixed(2)}`}
-          subtitle="Completed sales & orders"
-          icon={ShoppingCart}
-          iconBg="bg-blue-50"
-          iconColor="text-blue-600"
-          onClick={() => onNavigate('sales')}
-        />
-
-        <StatCard
-          id="kpi-total-income"
-          title="Total Income"
-          value={`$${todayIncome.toFixed(2)}`}
-          subtitle="Service & other income (today)"
-          icon={TrendingUp}
-          iconBg="bg-emerald-50"
-          iconColor="text-emerald-600"
-          onClick={() => onNavigate('income')}
-        />
-
-        <StatCard
-          id="kpi-total-expenses"
-          title="Today's Expenses"
-          value={`$${todayExpenses.toFixed(2)}`}
-          subtitle="Utilities, fuel & ops"
-          icon={TrendingDown}
-          iconBg="bg-rose-50"
-          iconColor="text-rose-600"
-          onClick={() => onNavigate('expenses')}
-        />
-
-        <StatCard
-          id="kpi-net-profit"
-          title="Gross Profit"
-          value={`$${todayProfit.toFixed(2)}`}
-          subtitle="Today, after COGS & branch commission"
-          icon={DollarSign}
-          iconBg="bg-lime-50"
-          iconColor="text-lime-700"
-          highlight
-          trend={totalSales > 0 ? { value: `${((grossProfit / totalSales) * 100).toFixed(1)}% margin`, isPositive: grossProfit >= 0 } : undefined}
-          onClick={() => onNavigate('reports')}
-        />
-
-        <StatCard
-          id="kpi-today-net-profit"
-          title="Net Profit (Today)"
-          value={`$${todayNetProfit.toFixed(2)}`}
-          subtitle="Gross profit + income − expenses"
-          icon={DollarSign}
-          iconBg="bg-emerald-50"
-          iconColor="text-emerald-700"
-          highlight
-          onClick={() => onNavigate('reports')}
-        />
-
-        <StatCard
-          id="kpi-today-target"
-          title="Remaining Target"
-          value={`$${todayRemainingTarget.toFixed(2)}`}
-          subtitle={`Target $${todayTarget.toFixed(2)} − Net profit $${todayNetProfit.toFixed(2)}`}
-          icon={Target}
-          iconBg="bg-red-50"
-          iconColor="text-red-600"
-          onClick={() => onNavigate('targets')}
-        />
-
-        <StatCard
-          id="kpi-cash-in-hand"
-          title="Cash In Hand"
-          value={`$${totalCashInHand.toFixed(2)}`}
-          subtitle="Drawer + Bank accounts"
-          icon={Wallet}
-          iconBg="bg-amber-50"
-          iconColor="text-amber-600"
-          onClick={() => onNavigate('accounts')}
-        />
-
-        <StatCard
-          id="kpi-receivables-debt"
-          title="Customer Receivables"
-          value={`$${totalRemainingDebt.toFixed(2)}`}
-          subtitle="Uncollected customer credit"
-          icon={Users}
-          iconBg="bg-purple-50"
-          iconColor="text-purple-600"
-          onClick={() => onNavigate('customers')}
-        />
-
-        <StatCard
-          id="kpi-stock-valuation"
-          title="Stock Value (Retail)"
-          value={`$${totalStockValueSelling.toFixed(2)}`}
-          subtitle={`${products.length} active inventory SKUs`}
-          icon={Package}
-          iconBg="bg-indigo-50"
-          iconColor="text-indigo-600"
-          onClick={() => onNavigate('inventory')}
-        />
-      </div>
-
-      {/* Quick Action Buttons Row */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 p-3 sm:p-4 shadow-xs">
-        <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-3 px-1">
-          Quick Actions
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2">
-          <button
-            id="btn-quick-new-sale"
-            onClick={onOpenNewSale}
-            className="flex flex-col items-center justify-center p-3 rounded-xl bg-slate-50 hover:bg-[#bef264]/20 border border-slate-200/80 hover:border-lime-500/50 transition-all text-slate-700 hover:text-black group"
-          >
-            <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 group-hover:bg-[#bef264] group-hover:text-black flex items-center justify-center mb-1.5 transition-colors">
-              <ShoppingCart className="w-4 h-4" />
-            </div>
-            <span className="text-xs font-bold whitespace-nowrap">New Sale</span>
-          </button>
-
-          <button
-            onClick={() => onNavigate('pos')}
-            className="flex flex-col items-center justify-center p-3 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200/80 transition-all text-slate-700 group"
-          >
-            <div className="w-8 h-8 rounded-lg bg-purple-500/10 text-purple-600 flex items-center justify-center mb-1.5">
-              <Sparkles className="w-4 h-4" />
-            </div>
-            <span className="text-xs font-bold whitespace-nowrap">Quick POS</span>
-          </button>
-
-          <button
-            onClick={onOpenNewExpense}
-            className="flex flex-col items-center justify-center p-3 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200/80 transition-all text-slate-700 group"
-          >
-            <div className="w-8 h-8 rounded-lg bg-rose-500/10 text-rose-600 flex items-center justify-center mb-1.5">
-              <TrendingDown className="w-4 h-4" />
-            </div>
-            <span className="text-xs font-bold whitespace-nowrap">New Expense</span>
-          </button>
-
-          <button
-            onClick={() => onNavigate('purchases')}
-            className="flex flex-col items-center justify-center p-3 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200/80 transition-all text-slate-700 group"
-          >
-            <div className="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-600 flex items-center justify-center mb-1.5">
-              <Building2 className="w-4 h-4" />
-            </div>
-            <span className="text-xs font-bold whitespace-nowrap">New Purchase</span>
-          </button>
-
-          <button
-            onClick={onOpenNewIncome}
-            className="flex flex-col items-center justify-center p-3 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200/80 transition-all text-slate-700 group"
-          >
-            <div className="w-8 h-8 rounded-lg bg-teal-500/10 text-teal-600 flex items-center justify-center mb-1.5">
-              <TrendingUp className="w-4 h-4" />
-            </div>
-            <span className="text-xs font-bold whitespace-nowrap">Add Income</span>
-          </button>
-
-          <button
-            onClick={onOpenReceivePayment}
-            className="flex flex-col items-center justify-center p-3 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200/80 transition-all text-slate-700 group"
-          >
-            <div className="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-600 flex items-center justify-center mb-1.5">
-              <DollarSign className="w-4 h-4" />
-            </div>
-            <span className="text-xs font-bold whitespace-nowrap">Collection</span>
-          </button>
-
-          <button
-            onClick={onOpenNewDelivery}
-            className="flex flex-col items-center justify-center p-3 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200/80 transition-all text-slate-700 group"
-          >
-            <div className="w-8 h-8 rounded-lg bg-cyan-500/10 text-cyan-600 flex items-center justify-center mb-1.5">
-              <Truck className="w-4 h-4" />
-            </div>
-            <span className="text-xs font-bold whitespace-nowrap">New Delivery</span>
-          </button>
-
-          <button
-            onClick={onOpenNewAccount}
-            className="flex flex-col items-center justify-center p-3 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200/80 transition-all text-slate-700 group"
-          >
-            <div className="w-8 h-8 rounded-lg bg-indigo-500/10 text-indigo-600 flex items-center justify-center mb-1.5">
-              <Wallet className="w-4 h-4" />
-            </div>
-            <span className="text-xs font-bold whitespace-nowrap">Transfer</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Charts & Financial Summary Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Performance Overview Chart */}
-        <div className="lg:col-span-8 bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="font-bold text-slate-900 text-sm sm:text-base">
-                Performance Overview
-              </h3>
-              <p className="text-xs text-slate-500">
-                Sales, revenue, and gross profit trajectory across Cycle 1
-              </p>
-            </div>
-            <div className="flex items-center gap-3 text-xs">
-              <span className="flex items-center gap-1 text-slate-600 font-medium">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" /> Sales
-              </span>
-              <span className="flex items-center gap-1 text-slate-600 font-medium">
-                <span className="w-2.5 h-2.5 rounded-full bg-indigo-500" /> Profit
-              </span>
-            </div>
-          </div>
-
-          <div className="h-64 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={performanceData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.2} />
-                    <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
-                  </linearGradient>
-                  <linearGradient id="colorProfit" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#6366f1" stopOpacity={0.2} />
-                    <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis dataKey="date" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} tickFormatter={(val) => `$${val}`} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: '#0f172a',
-                    borderRadius: '12px',
-                    border: 'none',
-                    color: '#fff',
-                    fontSize: '12px',
-                  }}
-                  formatter={(val: number) => [`$${val.toFixed(2)}`, '']}
-                />
-                <Area type="monotone" dataKey="sales" stroke="#10b981" strokeWidth={2.5} fillOpacity={1} fill="url(#colorSales)" />
-                <Area type="monotone" dataKey="profit" stroke="#6366f1" strokeWidth={2.5} fillOpacity={1} fill="url(#colorProfit)" />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        {/* Financial Summary Donut Chart */}
-        <div className="lg:col-span-4 bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs flex flex-col justify-between">
+    <div className="dashboard-surface min-h-full px-4 py-5 sm:px-6 lg:px-8 lg:py-7">
+      <div className="mx-auto max-w-[1440px] space-y-6">
+        <section className="flex flex-wrap items-end justify-between gap-4 border-b border-border pb-5">
           <div>
-            <h3 className="font-bold text-slate-900 text-sm sm:text-base mb-1">
-              Financial Summary
-            </h3>
-            <p className="text-xs text-slate-500 mb-3">
-              Asset split: Cash, Debt & Stock
-            </p>
-
-            <div className="h-44 w-full relative flex items-center justify-center">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={donutData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={50}
-                    outerRadius={70}
-                    paddingAngle={4}
-                    dataKey="value"
-                  >
-                    {donutData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip formatter={(val: number) => `$${val.toFixed(2)}`} />
-                </PieChart>
-              </ResponsiveContainer>
-              <div className="absolute text-center">
-                <div className="text-[10px] uppercase font-bold text-slate-400">Total Pool</div>
-                <div className="text-sm font-black text-slate-900">
-                  ${(totalCashInHand + totalRemainingDebt + totalStockValueSelling).toFixed(0)}
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-2 mt-3 pt-3 border-t border-slate-100 text-xs">
-              <div className="flex items-center justify-between">
-                <span className="flex items-center gap-1.5 text-slate-600 font-medium">
-                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" /> Cash in Hand
-                </span>
-                <span className="font-bold text-slate-900">${totalCashInHand.toFixed(2)}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="flex items-center gap-1.5 text-slate-600 font-medium">
-                  <span className="w-2.5 h-2.5 rounded-full bg-amber-500" /> Customer Receivables
-                </span>
-                <span className="font-bold text-slate-900">${totalRemainingDebt.toFixed(2)}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="flex items-center gap-1.5 text-slate-600 font-medium">
-                  <span className="w-2.5 h-2.5 rounded-full bg-indigo-500" /> Inventory Stock
-                </span>
-                <span className="font-bold text-slate-900">${totalStockValueSelling.toFixed(2)}</span>
-              </div>
-            </div>
+            <div className="dashboard-kicker mb-2 flex items-center gap-2"><span className="inline-block h-1.5 w-1.5 rounded-full bg-[var(--dash-mint)]" /> STORE OVERVIEW <span className="text-muted-foreground">/ TODAY</span></div>
+            <h1 className="dashboard-heading text-2xl font-bold text-foreground sm:text-3xl">Good day, {currentUser.name}</h1>
+            <p className="mt-1 text-sm text-muted-foreground">A clear view of today's store activity.</p>
           </div>
-        </div>
-      </div>
+          <div className="dashboard-date flex items-center gap-2 border border-border bg-card px-3 py-2 text-xs font-semibold text-foreground"><CalendarDays className="h-4 w-4 text-primary" />{new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' })}</div>
+        </section>
 
-      {/* Target Command Center & Recent Invoices Split */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Target Command Center */}
-        <div className="lg:col-span-5 bg-slate-900 text-white rounded-2xl p-5 shadow-md flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <Target className="w-5 h-5 text-lime-400" />
-                <h3 className="font-bold text-sm sm:text-base">
-                  Target Command Center
-                </h3>
-              </div>
-              <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-lime-400/20 text-lime-400">
-                Cycle Goal
-              </span>
-            </div>
+        <section aria-label="Daily performance" className="grid gap-3 lg:grid-cols-[1.35fr_1fr_1fr]">
+          <Button id="kpi-today-net-profit" variant="ghost" onClick={() => onNavigate('reports')} className="dashboard-feature dashboard-feature-profit group flex h-auto min-h-[172px] flex-col items-start justify-between whitespace-normal p-5 text-left hover:bg-primary/95 sm:p-6">
+            <div className="flex w-full items-center justify-between"><span className="dashboard-kicker text-primary-foreground/70">NET PROFIT / TODAY</span><ArrowUpRight className="h-5 w-5 text-primary-foreground/70 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" /></div>
+            <div><div className="dashboard-heading break-all text-4xl font-semibold text-primary-foreground sm:text-5xl">{money(todayNetProfit)}</div><p className="mt-2 text-xs font-medium text-primary-foreground/75">Gross profit + other income − expenses</p></div>
+          </Button>
+          <Button id="kpi-today-target" variant="ghost" onClick={() => onNavigate('targets')} className="dashboard-feature dashboard-feature-target group flex h-auto min-h-[172px] flex-col items-start justify-between whitespace-normal border border-border p-5 text-left hover:bg-accent sm:p-6">
+            <div className="flex w-full items-center justify-between"><span className="dashboard-kicker text-muted-foreground">REMAINING TARGET</span><Target className="h-5 w-5 text-[var(--dash-clay)]" /></div>
+            <div className="w-full"><div className="dashboard-heading break-all text-3xl font-semibold text-foreground sm:text-4xl">{money(todayRemainingTarget)}</div><p className="mt-2 text-xs font-medium text-muted-foreground">Target {money(todayTarget)} − Net profit {money(todayNetProfit)}</p><div className="mt-3 h-1 w-full bg-muted"><div className="h-full bg-[var(--dash-forest)] transition-[width] duration-500" style={{ width: `${targetProgressPct}%` }} /></div></div>
+          </Button>
+          <div className="dashboard-feature dashboard-feature-summary flex min-h-[172px] flex-col justify-between border border-border p-5 sm:p-6"><span className="dashboard-kicker text-muted-foreground">TODAY AT A GLANCE</span><div className="space-y-2 text-sm"><div className="flex items-center justify-between border-b border-border pb-2"><span className="text-muted-foreground">Sales</span><strong className="font-semibold text-foreground">{money(todaySales)}</strong></div><div className="flex items-center justify-between border-b border-border pb-2"><span className="text-muted-foreground">Gross profit</span><strong className="font-semibold text-foreground">{money(todayProfit)}</strong></div><div className="flex items-center justify-between"><span className="text-muted-foreground">Expenses</span><strong className="font-semibold text-[var(--dash-clay)]">{money(todayExpenses)}</strong></div></div></div>
+        </section>
 
-            <div className="flex items-center gap-6 my-4">
-              {/* Circular gauge */}
-              <div className="relative w-24 h-24 flex items-center justify-center shrink-0">
-                <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
-                  <path
-                    className="text-slate-800"
-                    strokeWidth="3.5"
-                    stroke="currentColor"
-                    fill="none"
-                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                  />
-                  <path
-                    className="text-[#bef264]"
-                    strokeDasharray={`${targetProgressPct}, 100`}
-                    strokeWidth="3.5"
-                    strokeLinecap="round"
-                    stroke="currentColor"
-                    fill="none"
-                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                  />
-                </svg>
-                <div className="absolute text-center">
-                  <div className="text-lg font-black text-white">{targetProgressPct}%</div>
-                  <div className="text-[9px] uppercase tracking-wider text-slate-400">Done</div>
-                </div>
-              </div>
+        <section aria-label="Store metrics" className="dashboard-metric-grid grid grid-cols-2 gap-2 md:grid-cols-3 xl:grid-cols-4">
+          {metrics.map(({ id, label, value, note, icon: Icon, to, tone }) => (
+            <Button key={id} id={id} variant="ghost" onClick={() => onNavigate(to)} className="dashboard-metric group flex h-auto min-h-[107px] flex-col items-start justify-between whitespace-normal border border-border p-3.5 text-left hover:bg-accent sm:p-4">
+              <div className="flex w-full items-start justify-between gap-2"><span className="dashboard-kicker text-muted-foreground">{label}</span><Icon className={`h-4 w-4 shrink-0 dashboard-icon-${tone}`} /></div>
+              <div className="w-full"><div className="dashboard-heading break-all text-xl font-semibold text-foreground sm:text-2xl">{money(value)}</div><div className="mt-0.5 truncate text-[11px] font-normal text-muted-foreground">{note}</div></div>
+            </Button>
+          ))}
+        </section>
 
-              <div className="space-y-2 text-xs flex-1">
-                <div>
-                  <div className="text-slate-400 text-[11px]">Today's Benchmark</div>
-                  <div className="text-base font-black text-white">
-                    ${todayNetProfit.toFixed(2)} / ${todayTarget.toFixed(2)}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-slate-400 text-[11px]">Monthly Goal (Cycle 1)</div>
-                  <div className="text-sm font-bold text-slate-300">
-                    ${totalSales.toFixed(2)} / ${settings.monthlyTarget.toFixed(2)}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+        <section className="border-y border-border py-4"><div className="mb-3 flex items-center justify-between"><h2 className="dashboard-heading text-sm font-semibold text-foreground">Quick actions</h2><span className="dashboard-kicker text-muted-foreground">OPERATIONS</span></div><div className="grid grid-cols-2 gap-2 sm:grid-cols-4 xl:grid-cols-8">{actions.map(({ label, icon: Icon, action }) => <Button key={label} id={label === 'New Sale' ? 'btn-quick-new-sale' : undefined} variant="outline" onClick={action} className="dashboard-action h-11 justify-start gap-2 px-3 text-xs font-semibold shadow-none"><Icon className="h-4 w-4 text-primary" />{label}</Button>)}</div></section>
 
-          <button
-            onClick={() => onNavigate('targets')}
-            className="w-full py-2.5 mt-2 bg-slate-800 hover:bg-slate-700 text-lime-400 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-colors"
-          >
-            Adjust Target Parameters
-            <ChevronRight className="w-3.5 h-3.5" />
-          </button>
-        </div>
+        <section className="grid gap-4 lg:grid-cols-[minmax(0,1.7fr)_minmax(270px,1fr)]">
+          <div className="dashboard-panel min-w-0 border border-border bg-card p-4 sm:p-5"><div className="mb-5 flex flex-wrap items-start justify-between gap-2"><div><h2 className="dashboard-heading text-base font-semibold text-foreground">Performance</h2><p className="text-xs text-muted-foreground">Completed sales and profit · Last 14 days</p></div><div className="flex gap-3 text-[11px] font-medium text-muted-foreground"><span className="flex items-center gap-1.5"><i className="h-2 w-2 rounded-full bg-[var(--dash-forest)]" />Sales</span><span className="flex items-center gap-1.5"><i className="h-2 w-2 rounded-full bg-[var(--dash-clay)]" />Profit</span></div></div><div className="h-56 w-full"><ResponsiveContainer width="100%" height="100%"><AreaChart data={performanceData} margin={{ top: 8, right: 8, left: -23, bottom: 0 }}><CartesianGrid stroke="var(--dash-line)" strokeDasharray="3 4" vertical={false} /><XAxis dataKey="date" tick={{ fontSize: 10, fill: 'var(--dash-subtle)' }} axisLine={false} tickLine={false} minTickGap={15} /><YAxis tick={{ fontSize: 10, fill: 'var(--dash-subtle)' }} axisLine={false} tickLine={false} tickFormatter={v => `$${v}`} /><Tooltip contentStyle={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)', color: 'var(--foreground)', borderRadius: 4, fontSize: 12 }} formatter={(value: number) => money(value)} /><Area type="monotone" dataKey="sales" stroke="var(--dash-forest)" strokeWidth={2} fill="var(--dash-forest)" fillOpacity={0.08} /><Area type="monotone" dataKey="profit" stroke="var(--dash-clay)" strokeWidth={2} fill="var(--dash-clay)" fillOpacity={0.04} /></AreaChart></ResponsiveContainer></div></div>
+          <div className="dashboard-panel border border-border bg-card p-4 sm:p-5"><h2 className="dashboard-heading text-base font-semibold text-foreground">Financial position</h2><p className="text-xs text-muted-foreground">Cash, credit & stock at retail value</p><div className="relative mx-auto mt-3 h-36 w-full"><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={hasAssets ? assets : [{ name: 'No assets', value: 1, color: 'var(--muted)' }]} dataKey="value" innerRadius={49} outerRadius={65} stroke="var(--card)" strokeWidth={3}>{(hasAssets ? assets : [{ name: 'No assets', value: 1, color: 'var(--muted)' }]).map(x => <Cell key={x.name} fill={x.color} />)}</Pie><Tooltip formatter={(value: number) => money(hasAssets ? value : 0)} /></PieChart></ResponsiveContainer><div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center"><span className="dashboard-kicker text-muted-foreground">TOTAL ASSETS</span><strong className="dashboard-heading text-lg text-foreground">{money(pool)}</strong></div></div><div className="mt-2 divide-y divide-border">{assets.map(x => <div key={x.name} className="flex items-center justify-between py-2 text-xs"><span className="text-muted-foreground">{x.name}</span><strong className="text-foreground">{money(x.value)}</strong></div>)}</div></div>
+        </section>
 
-        {/* Recent Invoices Table Snippet */}
-        <div className="lg:col-span-7 bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="font-bold text-slate-900 text-sm sm:text-base">
-              Recent Sales Invoices
-            </h3>
-            <button
-              onClick={() => onNavigate('sales')}
-              className="text-xs font-semibold text-slate-600 hover:text-slate-900 flex items-center gap-1"
-            >
-              View All Invoices
-              <ChevronRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
-
-          <div className="divide-y divide-slate-100 overflow-x-auto">
-            {sales.slice(0, 4).map((s) => (
-              <div key={s.id} className="py-2.5 flex items-center justify-between text-xs">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-slate-900">{s.invoiceNo}</span>
-                    <span
-                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                        s.paymentStatus === 'full_paid'
-                          ? 'bg-emerald-100 text-emerald-800'
-                          : s.paymentStatus === 'partial_payment'
-                          ? 'bg-amber-100 text-amber-800'
-                          : 'bg-rose-100 text-rose-800'
-                      }`}
-                    >
-                      {s.paymentStatus === 'full_paid' ? 'Paid' : s.paymentStatus === 'partial_payment' ? 'Partial' : 'Debt'}
-                    </span>
-                  </div>
-                  <div className="text-slate-500 text-[11px] mt-0.5">
-                    {s.customerName} • {s.date}
-                  </div>
-                </div>
-
-                <div className="text-right">
-                  <div className="font-bold text-slate-900">${s.grandTotal.toFixed(2)}</div>
-                  <div className="text-[11px] text-slate-500">{s.paymentMethod}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+        <section className="dashboard-panel border border-border bg-card p-4 sm:p-5"><div className="mb-3 flex items-center justify-between gap-2"><div><h2 className="dashboard-heading text-base font-semibold text-foreground">Recent sales</h2><p className="text-xs text-muted-foreground">Latest invoices</p></div><Button variant="ghost" onClick={() => onNavigate('sales')} className="h-8 px-2 text-xs font-semibold text-primary">View all <ChevronRight className="h-3 w-3" /></Button></div>{sales.length === 0 ? <p className="border-t border-border py-8 text-center text-sm text-muted-foreground">No sales recorded yet.</p> : <div className="divide-y divide-border">{sales.slice(0, 4).map(s => <div key={s.id} className="flex items-center justify-between gap-4 py-3 text-xs"><div className="min-w-0"><div className="font-semibold text-foreground">{s.invoiceNo}</div><div className="truncate text-muted-foreground">{s.customerName} · {s.date}</div></div><strong className="shrink-0 text-foreground">{money(s.grandTotal)}</strong></div>)}</div>}</section>
       </div>
     </div>
   );

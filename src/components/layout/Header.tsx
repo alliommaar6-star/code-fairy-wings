@@ -109,16 +109,13 @@ export const Header: React.FC<HeaderProps> = ({
         <button
           id="btn-today-target-header"
           onClick={() => onNavigate("targets")}
-          className="flex items-center gap-1.5 bg-[#e11d48] hover:bg-[#be123c] text-white px-3 py-1.5 rounded-full text-xs font-semibold shadow-xs hover:shadow-md transition-all active:scale-95"
+          className="flex h-9 min-w-0 items-center gap-1.5 rounded bg-primary px-2 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90 sm:px-3"
           title="View Target Command Center"
         >
           <Target className="w-3.5 h-3.5 animate-pulse" />
-          <span className="hidden md:inline font-bold tracking-wider text-[11px] uppercase">
-            Today Target
-          </span>
-          <span className="bg-white/20 px-1.5 py-0.5 rounded-full text-[11px] font-bold">
-            ${todayRemainingTarget.toFixed(2)} remaining · ${todayNetProfit.toFixed(2)} / ${todayTarget.toFixed(2)}
-          </span>
+          <span className="hidden md:inline font-bold text-[11px] uppercase">Target left</span>
+          <span className="text-[11px] font-bold">${todayRemainingTarget.toFixed(2)}</span>
+          <span className="hidden xl:inline text-[11px] font-medium opacity-75">of ${todayTarget.toFixed(2)} · profit ${todayNetProfit.toFixed(2)}</span>
         </button>
 
         {/* Quick Add Dropdown */}
