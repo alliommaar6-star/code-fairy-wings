@@ -31,13 +31,17 @@ interface NewOrderModalProps {
   isOpen: boolean;
   onClose: () => void;
   onOrderCreated?: (order: Order, asSale?: boolean) => void;
+  /** "sale" = direct Pickup sale with full payment; "order" = Delivery/Cargo order */
+  mode?: "sale" | "order";
 }
 
 export const NewOrderModal: React.FC<NewOrderModalProps> = ({
   isOpen,
   onClose,
   onOrderCreated,
+  mode = "sale",
 }) => {
+  const isSaleMode = mode === "sale";
   const { products, customers, drivers, createOrder, addCustomer, orders, sales } = useStore();
   const [recordCode, setRecordCode] = useState<string>("");
   const suggestedCode = nextCode("SO", [
@@ -98,6 +102,12 @@ export const NewOrderModal: React.FC<NewOrderModalProps> = ({
     else setPayMode((m) => (m === "advance" ? "debt" : m));
   };
   const [notes, setNotes] = useState<string>("");
+
+  // Direct sale is always Pickup; an order is Delivery or Cargo.
+  useEffect(() => {
+    if (!isOpen) return;
+    setFulfillmentType(isSaleMode ? "Pickup" : "Delivery");
+  }, [isOpen, isSaleMode]);
 
   // Default payment mode per fulfillment: Pickup/Cargo → Full Payment, Delivery → Hormaris.
   useEffect(() => {
@@ -295,8 +305,7 @@ export const NewOrderModal: React.FC<NewOrderModalProps> = ({
     });
 
     if (onOrderCreated) {
-      // Order iyo Sale waa hal xabo — mar walba waa iib toos ah.
-      onOrderCreated(newOrder, true);
+      onOrderCreated(newOrder, isSaleMode);
     }
     setRecordCode("");
     onClose();
@@ -313,7 +322,7 @@ export const NewOrderModal: React.FC<NewOrderModalProps> = ({
             </div>
             <div>
               <h2 className="text-base font-bold text-white leading-tight">
-                Sales / Orders — Diiwaan Gelin Cusub
+                {isSaleMode ? "Iib Toos ah (Sale) — Pickup, Lacag Buuxda" : "Dalab Cusub (Order) — Delivery / Cargo"}
               </h2>
               <p className="text-xs text-slate-400">
                 {new Date().toLocaleDateString()} ·{" "}
@@ -668,14 +677,15 @@ export const NewOrderModal: React.FC<NewOrderModalProps> = ({
           </div>
 
           {/* STEP 3: Fulfillment Configuration */}
-          <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
+          <div hidden={isSaleMode} className="bg-slate-50 p-4 rounded-xl border border-slate-200">
             <div className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-3">
               3. Qaabka Gaarsiinta (Fulfillment Mode)
             </div>
 
-            <div className="grid grid-cols-3 gap-3 mb-4">
+            <div className="grid grid-cols-2 gap-3 mb-4">
               <button
                 type="button"
+                hidden
                 onClick={() => setFulfillmentType("Pickup")}
                 className={`p-3 rounded-xl border flex flex-col items-center gap-1.5 transition text-xs font-semibold ${
                   fulfillmentType === "Pickup"

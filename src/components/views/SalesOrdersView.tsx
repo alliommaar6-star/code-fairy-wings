@@ -202,8 +202,7 @@ export const SalesOrdersView: React.FC<SalesOrdersViewProps> = ({
             <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Sales / Orders</h1>
           </div>
           <p className="text-xs text-slate-500 mt-1">
-            Dalab iyo iib waa mid — hal liis: dalabka, iibka tooska ah, bixinta, gaarsiinta iyo
-            celinta
+            Iib Toos ah = Pickup xarunta (lacag buuxda) · Dalab = Delivery / Cargo · Branches = iibka laamaha
           </p>
         </div>
 
