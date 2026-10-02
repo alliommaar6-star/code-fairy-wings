@@ -123,7 +123,7 @@ export const SalesOrdersView: React.FC<SalesOrdersViewProps> = ({
         list.push({ kind: "order", key: `o-${o.id}`, ts: tsOf(o.date, o.time), order: o }),
       );
     }
-    if (kindFilter !== "orders") {
+    {
       sales
         .filter((s) =>
           kindFilter === "sales" ? s.fulfillmentType === "Pickup" : kindFilter === "orders" ? s.fulfillmentType !== "Pickup" : true,
