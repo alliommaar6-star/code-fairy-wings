@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { StaffRoleContext, normalizeRole, ROLE_CACHE_KEY, type StaffRole } from '@/lib/roles';
 
 type Phase = 'checking' | 'login' | 'not_staff' | 'ready';
 
@@ -16,14 +17,25 @@ export const StaffGate: React.FC<{ children: React.ReactNode }> = ({ children })
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
   const [offlineOk, setOfflineOk] = useState(false);
+  // Offline fallback uses the most restrictive role until the real one is known.
+  const [role, setRole] = useState<StaffRole>('cashier');
 
   const check = async () => {
+    const cached = localStorage.getItem(ROLE_CACHE_KEY);
+    if (cached) setRole(normalizeRole(cached));
     const { data } = await supabase.auth.getSession();
     if (!data.session) return setPhase('login');
     if (!navigator.onLine) return setPhase('ready'); // cached session: work offline, sync later
     const { data: r, error } = await supabase.rpc('claim_first_owner');
     if (error) return setPhase('ready'); // network hiccup: keep working, sync retries
-    setPhase((r as { staff?: boolean })?.staff ? 'ready' : 'not_staff');
+    if (!(r as { staff?: boolean })?.staff) return setPhase('not_staff');
+    const { data: me } = await supabase.from('staff_members').select('role').eq('user_id', data.session.user.id).maybeSingle();
+    if (me) {
+      const nr = normalizeRole(me.role);
+      setRole(nr);
+      localStorage.setItem(ROLE_CACHE_KEY, nr);
+    }
+    setPhase('ready');
   };
 
   useEffect(() => { void check(); }, []);
@@ -45,7 +57,7 @@ export const StaffGate: React.FC<{ children: React.ReactNode }> = ({ children })
     void check();
   };
 
-  if (phase === 'ready' || offlineOk) return <>{children}</>;
+  if (phase === 'ready' || offlineOk) return <StaffRoleContext.Provider value={role}>{children}</StaffRoleContext.Provider>;
 
   const shell = (body: React.ReactNode) => (
     <div className="fixed inset-0 flex items-center justify-center bg-slate-950 px-5">
