@@ -456,7 +456,7 @@ function ActionCard({
 }
 
 // Professional report renderer: headings, bold, lists, tables.
-function Md({ text }: { text: string }) {
+export function Md({ text }: { text: string }) {
   const lines = text.split("\n");
   const out: React.ReactElement[] = [];
   const inline = (x: string) =>

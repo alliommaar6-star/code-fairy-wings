@@ -36,10 +36,13 @@ import { CustomerOrderPortalModal } from "./components/views/CustomerOrderPortal
 import { CustomerPortalView } from "./components/views/CustomerPortalView";
 import { Sale, Customer, Product, Order } from "./types";
 import { decodeOrderData } from "./utils/portalUrl";
-import { Search, ShoppingBag, PhoneCall, AlertTriangle } from "lucide-react";
+import { Search, ShoppingBag, PhoneCall, AlertTriangle, ShieldOff } from "lucide-react";
+import { StockInsightsView } from "./components/views/StockInsightsView";
+import { canAccess, useStaffRole, ROLE_LABELS } from "./lib/roles";
 
 const MainApp: React.FC = () => {
   const { convertOrderToSale, getOrderByPortalToken, registerExternalOrder, orders } = useStore();
+  const staffRole = useStaffRole();
   const [activeTab, setActiveTab] = useState<NavSection>("dashboard");
   // Sidebar wuu xirnaanayaa marka hore — wuxuu furmayaa oo kaliya marka badhanka Menu la riixo
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
@@ -305,6 +308,14 @@ const MainApp: React.FC = () => {
 
         {/* Scrollable View Container */}
         <main className="flex-1 overflow-y-auto pb-16">
+          {!canAccess(staffRole, activeTab) ? (
+            <div className="max-w-md mx-auto mt-24 text-center space-y-2 p-6">
+              <ShieldOff className="w-10 h-10 mx-auto text-slate-400" />
+              <h2 className="font-extrabold text-slate-900">No access</h2>
+              <p className="text-sm text-slate-500">Your role ({ROLE_LABELS[staffRole]}) can't open this section. Ask the owner if you need it.</p>
+            </div>
+          ) : (<>
+          {activeTab === "insights" && <StockInsightsView />}
           {activeTab === "dashboard" && (
             <DashboardView
               onNavigate={setActiveTab}
@@ -414,6 +425,7 @@ const MainApp: React.FC = () => {
           {activeTab === "reports" && <ReportsView />}
 
           {activeTab === "settings" && <SettingsView />}
+          </>)}
         </main>
         <AlertCenter onOpen={() => setActiveTab("tracking" as NavSection)} />
       </div>

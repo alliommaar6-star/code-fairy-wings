@@ -24,8 +24,10 @@ import {
   ChevronRight,
   X,
   MapPin,
+  LineChart,
 } from "lucide-react";
 import { useStore } from "../../context/StoreContext";
+import { canAccess, useStaffRole } from "@/lib/roles";
 
 export type NavSection =
   | "dashboard"
@@ -48,6 +50,7 @@ export type NavSection =
   | "reports"
   | "targets"
   | "accounting"
+  | "insights"
   | "users"
   | "settings"
   | "pos";
@@ -74,6 +77,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const currentTab = activeSection || propActiveTab || "dashboard";
   const handleSelectTab = onSelectSection || propSetActiveTab || (() => {});
   const { currentUser, settings } = useStore();
+  const staffRole = useStaffRole();
 
   const menuItems = [
     { id: "dashboard" as NavSection, label: "Dashboard", icon: LayoutGrid },
@@ -94,9 +98,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: "reports" as NavSection, label: "Reports", icon: BarChart3 },
     { id: "targets" as NavSection, label: "Targets", icon: Target },
     { id: "accounting" as NavSection, label: "Accounting", icon: BookOpen },
+    { id: "insights" as NavSection, label: "Stock Advisor (AI)", icon: LineChart },
     { id: "users" as NavSection, label: "Users & Roles", icon: ShieldCheck },
     { id: "settings" as NavSection, label: "Settings", icon: Settings },
-  ];
+  ].filter((m) => canAccess(staffRole, m.id));
 
   const handleSelect = (tab: NavSection) => {
     handleSelectTab(tab);

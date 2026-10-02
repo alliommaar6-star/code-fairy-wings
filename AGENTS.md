@@ -21,3 +21,5 @@
 - Every change to `app_state` is versioned into `app_state_history` by trigger and restorable from Settings → System Management; an empty cloud value never overwrites non-empty local data on first sight. Why: no update, device or account change can permanently lose data.
 
 - Server/data layer uses Lovable Cloud (Supabase client + app_state sync); never a standalone pg/in-memory backend — Workers cannot reach a local Postgres and memory loses data.
+- Staff roles (owner/admin/cashier/inventory) come from `staff_members.role`; section access is defined once in src/lib/roles.ts and enforced in the sidebar and main view. Why: one source of truth for who sees what.
+- The AI Stock Advisor (insights.functions.ts) receives a browser-built sales/stock snapshot and only advises; it never changes data. Why: numbers stay deterministic.
