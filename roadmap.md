@@ -5,3 +5,5 @@
 - [x] Branch sales: branches, per-branch stock, fixed commission per sale
 - [x] Dashboard: Net Profit, today's sales = completed only, income separate, target − net profit
 - [ ] Connect GitHub API (new workspace)
+- [x] GitHub API connected
+- [x] Branches: stronger tracking — overview of all branches, transfer history (e.g. 20 of 1000 to Garoowe), sales & commission per branch

@@ -104,6 +104,40 @@ export const BranchSalesPanel: React.FC = () => {
         </button>
       </div>
 
+      {st.branches.length > 0 && (
+        <div className="bg-white rounded-xl border border-slate-200 overflow-x-auto">
+          <div className="px-4 pt-3 text-xs font-bold uppercase text-slate-700">Dhammaan Branches — Kooban</div>
+          <table className="w-full text-xs mt-2">
+            <thead className="bg-slate-100 text-slate-600 uppercase text-[11px]"><tr>
+              <th className="py-2 px-3 text-left">Branch</th><th className="px-3 text-right">La diray</th>
+              <th className="px-3 text-right">La iibiyay</th><th className="px-3 text-right">Taal</th>
+              <th className="px-3 text-right">Iibka $</th><th className="px-3 text-right">Commission $</th><th className="px-3 text-right">Faa'iido $</th></tr></thead>
+            <tbody>
+              {st.branches.map((b) => {
+                const sent = st.transfers.filter((t) => t.branchId === b.id).reduce((a, t) => a + t.quantity, 0);
+                const bsales = st.sales.filter((x) => x.branchId === b.id);
+                const sold = bsales.reduce((a, x) => a + x.items.reduce((q, i) => q + i.quantity, 0), 0);
+                const left = Object.values(st.stock[b.id] || {}).reduce((a, q) => a + q, 0);
+                const tot = bsales.reduce((a, x) => a + x.total, 0);
+                const com = bsales.reduce((a, x) => a + x.commission, 0);
+                const prof = bsales.reduce((a, x) => a + x.total - x.cost - x.commission, 0);
+                return (
+                  <tr key={b.id} onClick={() => setBranchId(b.id)} className={`border-t border-slate-100 cursor-pointer hover:bg-slate-50 ${b.id === bid ? "bg-lime-50" : ""}`}>
+                    <td className="py-2 px-3 font-bold">{b.name}</td>
+                    <td className="px-3 text-right font-mono">{sent}</td>
+                    <td className="px-3 text-right font-mono">{sold}</td>
+                    <td className="px-3 text-right font-mono font-bold">{left}</td>
+                    <td className="px-3 text-right font-mono">${tot.toFixed(2)}</td>
+                    <td className="px-3 text-right font-mono text-amber-700">${com.toFixed(2)}</td>
+                    <td className="px-3 text-right font-mono text-emerald-700">${prof.toFixed(2)}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+
       {branch && (
         <>
           <div className="grid grid-cols-3 gap-3">
@@ -168,6 +202,22 @@ export const BranchSalesPanel: React.FC = () => {
                 </button>
               )}
             </div>
+          </div>
+
+          <div className="bg-white rounded-xl border border-slate-200 overflow-x-auto">
+            <div className="px-4 pt-3 text-xs font-bold uppercase text-slate-700">Taariikhda u wareejinta — {branch.name}</div>
+            <table className="w-full text-xs mt-2">
+              <tbody>
+                {st.transfers.filter((t) => t.branchId === bid).length === 0 ? (
+                  <tr><td className="py-4 text-center text-slate-400">Weli alaab looma dirin.</td></tr>
+                ) : st.transfers.filter((t) => t.branchId === bid).map((t) => (
+                  <tr key={t.id} className="border-t border-slate-100">
+                    <td className="py-1.5 px-3">{t.date}</td><td className="px-3">{t.productName}</td>
+                    <td className="px-3 text-right font-mono font-bold text-emerald-700">+{t.quantity}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
 
           <div className="bg-white rounded-xl border border-slate-200 overflow-x-auto">
