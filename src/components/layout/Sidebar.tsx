@@ -125,14 +125,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* Backdrop — guji meel kasta oo bannaan si aad u xirto (mobile iyo desktop labadaba) */}
       {isOpen && (
         <div
-          className="fixed inset-0 bg-slate-950/70 z-40 backdrop-blur-xs transition-opacity duration-300 animate-in fade-in"
+          className="fixed inset-0 bg-slate-950/70 z-40 backdrop-blur-xs transition-opacity duration-300 animate-in fade-in lg:hidden"
           onClick={onClose}
           aria-label="Xir Menu-ga"
         />
       )}
 
       <aside
-        className={`fixed top-0 left-0 bottom-0 z-50 w-72 max-w-[85vw] bg-[#0d131f] text-slate-300 flex flex-col shadow-2xl transition-transform duration-300 ease-in-out select-none border-r border-slate-800/80 ${
+        className={`fixed top-0 left-0 bottom-0 z-50 w-72 max-w-[85vw] bg-[#0d131f] text-slate-300 flex flex-col shadow-2xl transition-transform duration-300 ease-in-out select-none border-r border-slate-800/80 lg:static lg:z-auto lg:shadow-none lg:pointer-events-auto lg:translate-x-0 ${
           isOpen ? "translate-x-0" : "-translate-x-full pointer-events-none"
         }`}
       >
@@ -154,7 +154,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/80 transition-colors"
+            className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/80 transition-colors lg:hidden"
             title="Xir / Qari Menu-ga (Collapse)"
             aria-label="Xir / Qari Menu-ga"
           >
