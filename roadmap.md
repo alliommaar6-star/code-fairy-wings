@@ -4,8 +4,7 @@
 - [x] Split Sales/Orders: Direct Sale (Pickup, full pay, default tab) vs Order (Delivery/Cargo)
 - [x] Branch sales: branches, per-branch stock, fixed commission per sale
 - [x] Dashboard: Net Profit, today's sales = completed only, income separate, target − net profit
-- [ ] Connect GitHub API (new workspace)
 - [x] GitHub API connected
 - [x] Branches: stronger tracking — overview of all branches, transfer history (e.g. 20 of 1000 to Garoowe), sales & commission per branch
 - [x] Clarify remaining daily target as target minus net profit across dashboard, header, and targets
-- [ ] Tighten dashboard KPI spacing and redesign dashboard and sidebar after visual direction selection
+- [x] Tighten dashboard KPI spacing and redesign dashboard and sidebar with a compact store-operations style
