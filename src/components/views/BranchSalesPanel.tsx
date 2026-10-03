@@ -21,6 +21,7 @@ export const BranchSalesPanel: React.FC = () => {
 
   // New branch
   const [newName, setNewName] = useState("");
+  const [newManager, setNewManager] = useState("");
   const [newComm, setNewComm] = useState(2);
 
   // Transfer stock
@@ -87,6 +88,14 @@ export const BranchSalesPanel: React.FC = () => {
           </select>
         </div>
         {branch && (
+          <div className="w-44">
+            <label className="block text-[11px] font-semibold text-slate-600 mb-1">Masuulka branch-ka</label>
+            <input value={branch.manager || ""} placeholder="Magaca masuulka"
+              onChange={(e) => updateBranch(branch.id, { manager: e.target.value })}
+              className={input} />
+          </div>
+        )}
+        {branch && (
           <div className="w-40">
             <label className="block text-[11px] font-semibold text-slate-600 mb-1">Commission iib kasta ($)</label>
             <input type="number" min="0" value={branch.commission}
@@ -95,10 +104,11 @@ export const BranchSalesPanel: React.FC = () => {
           </div>
         )}
         <div className="flex-1" />
-        <input placeholder="Magaca branch-ka (tus. Garoowe)" value={newName} onChange={(e) => setNewName(e.target.value)} className={`${input} max-w-[200px]`} />
-        <input type="number" min="0" placeholder="Commission $" value={newComm || ""} onChange={(e) => setNewComm(parseFloat(e.target.value) || 0)} className={`${input} max-w-[120px]`} />
+        <input placeholder="Magaca branch-ka (tus. Garoowe)" value={newName} onChange={(e) => setNewName(e.target.value)} className={`${input} max-w-[180px]`} />
+        <input placeholder="Masuulka (magaciisa)" value={newManager} onChange={(e) => setNewManager(e.target.value)} className={`${input} max-w-[160px]`} />
+        <input type="number" min="0" placeholder="Commission $" value={newComm || ""} onChange={(e) => setNewComm(parseFloat(e.target.value) || 0)} className={`${input} max-w-[110px]`} />
         <button
-          onClick={() => { if (newName.trim()) { addBranch(newName, newComm); setNewName(""); setNewComm(2); } }}
+          onClick={() => { if (newName.trim()) { addBranch(newName, newManager, newComm); setNewName(""); setNewManager(""); setNewComm(2); } }}
           className="px-3 py-2 bg-slate-900 text-lime-400 rounded-lg text-xs font-bold flex items-center gap-1">
           <Plus className="w-3.5 h-3.5" /> Branch Cusub
         </button>
@@ -109,7 +119,7 @@ export const BranchSalesPanel: React.FC = () => {
           <div className="px-4 pt-3 text-xs font-bold uppercase text-slate-700">Dhammaan Branches — Kooban</div>
           <table className="w-full text-xs mt-2">
             <thead className="bg-slate-100 text-slate-600 uppercase text-[11px]"><tr>
-              <th className="py-2 px-3 text-left">Branch</th><th className="px-3 text-right">La diray</th>
+              <th className="py-2 px-3 text-left">Branch</th><th className="px-3 text-left">Masuul</th><th className="px-3 text-right">La diray</th>
               <th className="px-3 text-right">La iibiyay</th><th className="px-3 text-right">Taal</th>
               <th className="px-3 text-right">Iibka $</th><th className="px-3 text-right">Commission $</th><th className="px-3 text-right">Faa'iido $</th></tr></thead>
             <tbody>
@@ -124,6 +134,7 @@ export const BranchSalesPanel: React.FC = () => {
                 return (
                   <tr key={b.id} onClick={() => setBranchId(b.id)} className={`border-t border-slate-100 cursor-pointer hover:bg-slate-50 ${b.id === bid ? "bg-lime-50" : ""}`}>
                     <td className="py-2 px-3 font-bold">{b.name}</td>
+                    <td className="px-3 text-slate-600">{b.manager || "—"}</td>
                     <td className="px-3 text-right font-mono">{sent}</td>
                     <td className="px-3 text-right font-mono">{sold}</td>
                     <td className="px-3 text-right font-mono font-bold">{left}</td>
