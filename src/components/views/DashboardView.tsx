@@ -97,7 +97,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate, onOpen
   const periodNetProfit = current.net;
   const fmtLabel = (a: string, b: string) => a === b ? format(parseISO(a), 'MMM d, yyyy') : `${format(parseISO(a), 'MMM d, yyyy')} – ${format(parseISO(b), 'MMM d, yyyy')}`;
   const periodLabel = fmtLabel(start, end);
-  const comparedLabel = fmtLabel(comparisonStart, comparisonEnd);
+  const comparedLabel = comparisonDays === 1 ? fmtLabel(comparisonEnd, comparisonEnd) : fmtLabel(comparisonStart, comparisonEnd);
   const prevLabel = comparisonDays === 1 ? fmtLabel(prevEnd, prevEnd) : fmtLabel(prevStart, prevEnd);
   const branchName = branchFilter === 'all' ? 'All (store + branches)' : branchFilter === 'main' ? 'Main store' : branches.branches.find(b => b.id === branchFilter)?.name ?? 'Branch';
   const comparison = [
@@ -121,7 +121,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate, onOpen
       ['Benadir Store - Sales & Profit Report'], ['Period', periodLabel], ['Comparison', `${comparedLabel} vs ${prevLabel}`], ['Filter', branchName], [],
       ['DASHBOARD KPIs', 'Value'],
       ...metrics.map(m => [m.label, m.value.toFixed(2)]),
-      ['Today net profit', todayNetProfit.toFixed(2)], ['Month net profit', monthProfit.toFixed(2)], ['Year net profit', pYearC.net.toFixed(2)], ['All-time net profit', allTimeProfit.toFixed(2)],
+      ['Today net profit', pTodayC.net.toFixed(2)], ['Month net profit', pMonthC.net.toFixed(2)], ['Year net profit', pYearC.net.toFixed(2)], ['All-time net profit', allTimeProfit.toFixed(2)],
       ...tgtRows.flatMap(r => [[`${r.label} target`, r.target.toFixed(2)], [`${r.label} net profit`, r.net.toFixed(2)], [`${r.label} difference`, (r.net - r.target).toFixed(2)]]), [],
       ['Date', 'Sales', 'Gross profit', 'Other income', 'Expenses', 'Net profit'],
       ...performanceData.map(d => [d.fullDate, d.sales.toFixed(2), d.gross.toFixed(2), d.income.toFixed(2), d.expenses.toFixed(2), d.profit.toFixed(2)]),
