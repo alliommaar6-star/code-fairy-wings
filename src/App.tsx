@@ -14,6 +14,8 @@ import { CustomersView } from "./components/views/CustomersView";
 import { CargoView } from "./components/views/CargoView";
 import { DeliveryManagementView } from "./components/views/DeliveryManagementView";
 import { TargetsView } from "./components/views/TargetsView";
+import { PettyCashView } from "./components/views/PettyCashView";
+import { EvcReconciliationView } from "./components/views/EvcReconciliationView";
 import { ReportsView } from "./components/views/ReportsView";
 import { SettingsView } from "./components/views/SettingsView";
 
@@ -397,6 +399,8 @@ const MainApp: React.FC = () => {
           {activeTab === "drivers" && <DeliveryManagementView />}
 
           {activeTab === "targets" && <TargetsView />}
+          {activeTab === "pettycash" && <PettyCashView />}
+          {activeTab === "evcrecon" && <EvcReconciliationView />}
 
           {activeTab === "reports" && <ReportsView />}
 

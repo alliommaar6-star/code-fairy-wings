@@ -21,7 +21,7 @@ export const BranchSalesPanel: React.FC = () => {
 
   // New branch
   const [newName, setNewName] = useState("");
-  const [newComm, setNewComm] = useState(0);
+  const [newComm, setNewComm] = useState(2);
 
   // Transfer stock
   const [tProd, setTProd] = useState("");
@@ -98,7 +98,7 @@ export const BranchSalesPanel: React.FC = () => {
         <input placeholder="Magaca branch-ka (tus. Garoowe)" value={newName} onChange={(e) => setNewName(e.target.value)} className={`${input} max-w-[200px]`} />
         <input type="number" min="0" placeholder="Commission $" value={newComm || ""} onChange={(e) => setNewComm(parseFloat(e.target.value) || 0)} className={`${input} max-w-[120px]`} />
         <button
-          onClick={() => { if (newName.trim()) { addBranch(newName, newComm); setNewName(""); setNewComm(0); } }}
+          onClick={() => { if (newName.trim()) { addBranch(newName, newComm); setNewName(""); setNewComm(2); } }}
           className="px-3 py-2 bg-slate-900 text-lime-400 rounded-lg text-xs font-bold flex items-center gap-1">
           <Plus className="w-3.5 h-3.5" /> Branch Cusub
         </button>

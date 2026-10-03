@@ -1,10 +1,10 @@
 import React from 'react';
-import { LayoutGrid, ShoppingCart, ClipboardList, Users, Sparkles, Package, ShoppingBag, Building2, Truck, Car, DollarSign, Wallet, Receipt, TrendingUp, BarChart3, Target, BookOpen, ShieldCheck, Settings, ChevronRight, X, MapPin, LineChart, Store } from 'lucide-react';
+import { LayoutGrid, ShoppingCart, ClipboardList, Users, Sparkles, Package, ShoppingBag, Building2, Truck, Car, DollarSign, Wallet, Receipt, TrendingUp, BarChart3, Target, BookOpen, ShieldCheck, Settings, ChevronRight, X, MapPin, LineChart, Store, Scale } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useStore } from '../../context/StoreContext';
 import { canAccess, useStaffRole } from '@/lib/roles';
 
-export type NavSection = 'dashboard' | 'sales' | 'returns' | 'orders' | 'customers' | 'products' | 'inventory' | 'purchases' | 'suppliers' | 'delivery' | 'cargo' | 'tracking' | 'drivers' | 'payments' | 'accounts' | 'expenses' | 'income' | 'reports' | 'targets' | 'accounting' | 'insights' | 'users' | 'settings' | 'pos';
+export type NavSection = 'dashboard' | 'sales' | 'returns' | 'orders' | 'customers' | 'products' | 'inventory' | 'purchases' | 'suppliers' | 'delivery' | 'cargo' | 'tracking' | 'drivers' | 'payments' | 'accounts' | 'expenses' | 'income' | 'reports' | 'targets' | 'accounting' | 'insights' | 'users' | 'settings' | 'pos' | 'pettycash' | 'evcrecon';
 export interface SidebarProps {
   activeTab?: NavSection;
   setActiveTab?: (tab: NavSection) => void;
@@ -37,6 +37,8 @@ const groups = [
     { id: 'income' as NavSection, label: 'Income', icon: TrendingUp },
     { id: 'reports' as NavSection, label: 'Reports', icon: BarChart3 },
     { id: 'targets' as NavSection, label: 'Targets', icon: Target },
+    { id: 'pettycash' as NavSection, label: 'Petty Cash Fund', icon: Wallet },
+    { id: 'evcrecon' as NavSection, label: 'EVC Reconciliation', icon: Scale },
     { id: 'accounting' as NavSection, label: 'Accounting', icon: BookOpen },
   ] },
   { title: 'ADMINISTRATION', items: [
