@@ -167,16 +167,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate, onOpen
   const monthEnd = profitMonth === todayKey.slice(0, 7) ? todayKey : format(new Date(Number(profitMonth.slice(0, 4)), Number(profitMonth.slice(5, 7)), 0), 'yyyy-MM-dd');
   const monthProfit = compute(`${profitMonth}-01`, monthEnd).net;
   const allTimeProfit = compute('0000-01-01', todayKey).net;
-  // Personal tracker: opening money (saved once) + all-time net profit only.
-  const personalBase = (() => {
-    if (typeof window === 'undefined') return 0;
-    const saved = localStorage.getItem('benadir_personal_base_v1');
-    if (saved !== null && Number.isFinite(Number(saved))) return Number(saved);
-    const opening = accounts.filter(a => a.id.startsWith('acc-opening-')).reduce((s, a) => s + (a.balance || 0), 0);
-    const base = opening || totalCashInHand;
-    if (base > 0) localStorage.setItem('benadir_personal_base_v1', String(base));
-    return base;
-  })();
+  // Personal tracker: current cash in hand + all-time net profit, always derived live (never cached).
+  const personalTotal = totalCashInHand + allTimeProfit;
   const firstRecord = [todayKey, ...sales.map(x => x.date), ...orders.map(x => x.date), ...branches.sales.map(x => x.date), ...incomes.map(x => x.date), ...expenses.map(x => x.date)].filter(Boolean).sort()[0];
   const monthOptions: string[] = [];
   for (let y = Number(firstRecord.slice(0, 4)); y <= Number(todayKey.slice(0, 4)); y++) {
@@ -274,8 +266,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate, onOpen
           <div className="flex flex-col items-end gap-2">
           <div className="flex items-center gap-2 border border-border bg-card px-3 py-1.5" aria-label="Lacagta + Net Profit (gaar ahaan)">
             <div className="text-right">
-              <span className="dashboard-kicker block text-muted-foreground">Bilow + Net Profit</span>
-              <strong className="text-base font-bold text-foreground">{personalVisible && balanceVisible ? money(personalBase + allTimeProfit) : '••••••'}</strong>
+              <span className="dashboard-kicker block text-muted-foreground">Lacagta guud + Net Profit</span>
+              <strong className="text-base font-bold text-foreground">{personalVisible && balanceVisible ? money(personalTotal) : '••••••'}</strong>
             </div>
             <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => { if (personalVisible && balanceVisible) setPersonalVisible(false); else { setPersonalVisible(true); if (!balanceVisible) { setPin(''); setPinError(''); setPinOpen(true); } } }} aria-label={personalVisible && balanceVisible ? 'Qari' : 'Arag'}>{personalVisible && balanceVisible ? <EyeOff /> : <Eye />}</Button>
           </div>
