@@ -4267,7 +4267,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       deliveredOrders.reduce((sum, o) => sum + o.total, 0) +
       branch.total;
     const todayProfit =
-      todaySalesList.reduce((sum, s) => sum + s.grossProfit, 0) +
+      todaySalesList.reduce((sum, s) => sum + s.grossProfit - businessDeliveryCost(s), 0) +
       deliveredOrders.reduce(
         (sum, o) =>
           sum +
