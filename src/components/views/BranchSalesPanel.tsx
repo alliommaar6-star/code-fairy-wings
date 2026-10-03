@@ -89,8 +89,8 @@ export const BranchSalesPanel: React.FC = () => {
         </div>
         {branch && (
           <div className="w-44">
-            <label className="block text-[11px] font-semibold text-slate-600 mb-1">Masuulka branch-ka</label>
-            <input value={branch.manager || ""} placeholder="Magaca masuulka"
+            <label className="block text-[11px] font-semibold text-slate-600 mb-1">Branch Admin</label>
+            <input value={branch.manager || ""} placeholder="Magaca Branch Admin-ka"
               onChange={(e) => updateBranch(branch.id, { manager: e.target.value })}
               className={input} />
           </div>
@@ -105,7 +105,7 @@ export const BranchSalesPanel: React.FC = () => {
         )}
         <div className="flex-1" />
         <input placeholder="Magaca branch-ka (tus. Garoowe)" value={newName} onChange={(e) => setNewName(e.target.value)} className={`${input} max-w-[180px]`} />
-        <input placeholder="Masuulka (magaciisa)" value={newManager} onChange={(e) => setNewManager(e.target.value)} className={`${input} max-w-[160px]`} />
+        <input placeholder="Branch Admin (magaciisa)" value={newManager} onChange={(e) => setNewManager(e.target.value)} className={`${input} max-w-[160px]`} />
         <input type="number" min="0" placeholder="Commission $" value={newComm || ""} onChange={(e) => setNewComm(parseFloat(e.target.value) || 0)} className={`${input} max-w-[110px]`} />
         <button
           onClick={() => { if (newName.trim()) { addBranch(newName, newManager, newComm); setNewName(""); setNewManager(""); setNewComm(2); } }}
@@ -119,7 +119,7 @@ export const BranchSalesPanel: React.FC = () => {
           <div className="px-4 pt-3 text-xs font-bold uppercase text-slate-700">Dhammaan Branches — Kooban</div>
           <table className="w-full text-xs mt-2">
             <thead className="bg-slate-100 text-slate-600 uppercase text-[11px]"><tr>
-              <th className="py-2 px-3 text-left">Branch</th><th className="px-3 text-left">Masuul</th><th className="px-3 text-right">La diray</th>
+              <th className="py-2 px-3 text-left">Branch</th><th className="px-3 text-left">Branch Admin</th><th className="px-3 text-right">La diray</th>
               <th className="px-3 text-right">La iibiyay</th><th className="px-3 text-right">Taal</th>
               <th className="px-3 text-right">Iibka $</th><th className="px-3 text-right">Commission $</th><th className="px-3 text-right">Faa'iido $</th></tr></thead>
             <tbody>
@@ -234,7 +234,7 @@ export const BranchSalesPanel: React.FC = () => {
           <div className="bg-white rounded-xl border border-slate-200 overflow-x-auto">
             <table className="w-full text-xs">
               <thead className="bg-slate-100 text-slate-600 uppercase text-[11px]"><tr>
-                <th className="py-2 px-3 text-left">Taariikh</th><th className="px-3 text-left">Masuul</th><th className="px-3 text-left">Alaab</th>
+                <th className="py-2 px-3 text-left">Taariikh</th><th className="px-3 text-left">Branch Admin</th><th className="px-3 text-left">Alaab</th>
                 <th className="px-3 text-right">Wadarta</th><th className="px-3 text-right">Commission</th><th className="px-3 text-right">Faa'iido</th></tr></thead>
               <tbody>
                 {branchSales.length === 0 ? (
