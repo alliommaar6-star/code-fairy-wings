@@ -23,6 +23,7 @@ import { useStore } from "../../context/StoreContext";
 import { Order, Sale } from "../../types";
 import { NewOrderModal } from "./NewOrderModal";
 import { BranchSalesPanel } from "./BranchSalesPanel";
+import { BranchSaleModal } from "./BranchSaleModal";
 import PortalLinkModal from "../portal/PortalLinkModal";
 import { CustomerOrderPortalModal } from "./CustomerOrderPortalModal";
 import { AdminOrderDetailModal } from "./AdminOrderDetailModal";
@@ -220,6 +221,13 @@ export const SalesOrdersView: React.FC<SalesOrdersViewProps> = ({
             className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-lime-400 font-bold text-xs rounded-xl shadow-md transition flex items-center gap-2"
           >
             <Truck className="w-4 h-4" /> Dalab (Order)
+          </button>
+          <button
+            id="create-branch-sale-btn"
+            onClick={() => setIsBranchSaleOpen(true)}
+            className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center gap-2"
+          >
+            <StoreIcon className="w-4 h-4" /> Iibka Laamaha
           </button>
         </div>
       </div>
@@ -424,6 +432,12 @@ export const SalesOrdersView: React.FC<SalesOrdersViewProps> = ({
           </table>
         </div>
       </div>
+
+      {/* Branch Sale Modal (branch stock + fixed per-item commission) */}
+      <BranchSaleModal
+        isOpen={isBranchSaleOpen}
+        onClose={() => setIsBranchSaleOpen(false)}
+      />
 
       {/* New Order Modal */}
       <NewOrderModal

@@ -21,7 +21,7 @@ export const BranchSalesPanel: React.FC = () => {
 
   // New branch
   const [newName, setNewName] = useState("");
-  const [newComm, setNewComm] = useState(0);
+  const [newComm, setNewComm] = useState(2);
 
   // Transfer stock
   const [tProd, setTProd] = useState("");
