@@ -15,7 +15,7 @@ const ACCESS: Record<StaffRole, NavSection[] | null> = {
   owner: null,
   admin: null,
   cashier: ["dashboard", "orders", "sales", "returns", "pos", "customers", "payments", "delivery", "drivers", "tracking"],
-  inventory: ["dashboard", "products", "inventory", "purchases", "suppliers", "cargo", "tracking", "insights"],
+  inventory: ["dashboard", "products", "inventory", "purchases", "suppliers", "branches", "cargo", "tracking", "insights"],
 };
 
 export function normalizeRole(r: string | null | undefined): StaffRole {

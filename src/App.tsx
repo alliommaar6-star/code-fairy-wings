@@ -15,6 +15,7 @@ import { CargoView } from "./components/views/CargoView";
 import { DeliveryManagementView } from "./components/views/DeliveryManagementView";
 import { TargetsView } from "./components/views/TargetsView";
 import { PettyCashView } from "./components/views/PettyCashView";
+import { BranchSalesPanel } from "./components/views/BranchSalesPanel";
 import { EvcReconciliationView } from "./components/views/EvcReconciliationView";
 import { ReportsView } from "./components/views/ReportsView";
 import { SettingsView } from "./components/views/SettingsView";
@@ -400,6 +401,7 @@ const MainApp: React.FC = () => {
 
           {activeTab === "targets" && <TargetsView />}
           {activeTab === "pettycash" && <PettyCashView />}
+          {activeTab === "branches" && <div className="p-4 md:p-6"><h1 className="text-xl font-extrabold mb-4">Branches &amp; Stock</h1><BranchSalesPanel /></div>}
           {activeTab === "evcrecon" && <EvcReconciliationView />}
 
           {activeTab === "reports" && <ReportsView />}
