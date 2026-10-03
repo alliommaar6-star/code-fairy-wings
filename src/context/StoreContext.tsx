@@ -2767,7 +2767,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     // MANDATORY REQUIREMENT: Backup/restore point MUST exist before reset
     createManualBackup("Pre-Factory Reset Authoritative Snapshot");
-    const independentKeys = ["benadir_branches_v1", "benadir_tracking_v1", "benadir_journal_manual_v1", "benadir_ai_accountant_chat_v1", "benadir_finengine_v1"];
+    const independentKeys = ["benadir_branches_v1", "benadir_tracking_v1", "benadir_journal_manual_v1", "benadir_ai_accountant_chat_v1", "benadir_ai_stock_advisor_v1", "benadir_finengine_v1", "benadir_cargo_companies_v1", "benadir_delivery_v1", "benadir_payment_accounts_v1"];
     localStorage.setItem("benadir_pre_reset_extra_v1", JSON.stringify(Object.fromEntries(independentKeys.map(key => [key, localStorage.getItem(key) || ""]))));
 
     // 1. Wipe all business / sample / test data
@@ -2819,6 +2819,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     localStorage.setItem("benadir_tracking_v1", "{}");
     localStorage.setItem("benadir_journal_manual_v1", "[]");
     localStorage.setItem("benadir_ai_accountant_chat_v1", "[]");
+    localStorage.setItem("benadir_ai_stock_advisor_v1", "[]");
+    localStorage.setItem("benadir_cargo_companies_v1", "[]");
+    localStorage.setItem("benadir_delivery_v1", "[]");
+    localStorage.setItem("benadir_payment_accounts_v1", "[]");
     localStorage.setItem("benadir_finengine_v1", JSON.stringify({ config: { systemStartDate: new Date().toISOString().slice(0, 10), monthlyBaseTarget: 93.5, rentAmount: 250, rentStartDate: "2027-02-01" }, fundTransfers: [], reconciliations: [], audit: [] }));
     localStorage.setItem("benadir_categories", JSON.stringify(DEFAULT_CATEGORIES));
     localStorage.setItem("benadir_brands", JSON.stringify(DEFAULT_BRANDS));

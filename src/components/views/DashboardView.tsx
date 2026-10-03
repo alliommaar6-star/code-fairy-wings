@@ -116,7 +116,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate, onOpen
   const fileBase = `benadir-report-${start}_${end}`;
   const exportCSV = () => {
     const esc = (v: string | number) => `"${String(v).replace(/"/g, '""')}"`;
-    const safe = (v: string | number) => { const s = String(v); return esc(/^[\s]*[=+@\-]/.test(s) ? `'${s}` : s); };
+    const safe = (v: string | number) => { const s = String(v); return esc(/^[\s]*[=+@\-]/.test(s) && !/^-\d+(?:\.\d+)?$/.test(s) ? `'${s}` : s); };
     const lines = [
       ['Benadir Store - Sales & Profit Report'], ['Period', periodLabel], ['Comparison', `${comparedLabel} vs ${prevLabel}`], ['Filter', branchName], [],
       ['DASHBOARD KPIs', 'Value'],
