@@ -176,6 +176,7 @@ interface StoreContextType {
   transferFunds: (transfer: Omit<AccountTransfer, "id">) => void;
   addPaymentAccount: (account: Omit<PaymentAccount, "id">) => void;
   addAccount: (account: Omit<PaymentAccount, "id">) => void;
+  initializeOpeningAccounts: (accounts: Omit<PaymentAccount, "id">[]) => void;
 
   // Supplier & Purchase Management
   addSupplier: (
@@ -2777,6 +2778,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setTransfers([]);
     setCustomers([]);
     setDrivers([]);
+    setCategories(DEFAULT_CATEGORIES);
+    setBrands(DEFAULT_BRANDS);
+    setUnits(DEFAULT_UNITS);
+    setAuditLogs([]);
 
     // 2. Clear localStorage keys
     localStorage.setItem("benadir_factory_reset_done", "true");
@@ -2798,11 +2803,22 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     // Reset accounts to 0 balance for clean commercial start
     setAccounts((prev) =>
-      prev.map((acc) => ({
-        ...acc,
-        balance: 0,
-      })),
+      [],
     );
+
+    // Reset the independent offline-first stores as well as the context arrays.
+    // Keep the pre-reset backup for recovery and write explicit empty values so they sync.
+    localStorage.setItem("benadir_accounts", "[]");
+    localStorage.setItem("benadir_branches_v1", JSON.stringify({ branches: [], stock: {}, sales: [], transfers: [] }));
+    localStorage.setItem("benadir_tracking_v1", "{}");
+    localStorage.setItem("benadir_journal_manual_v1", "[]");
+    localStorage.setItem("benadir_ai_accountant_chat_v1", "[]");
+    localStorage.setItem("benadir_finengine_v1", JSON.stringify({ config: { systemStartDate: new Date().toISOString().slice(0, 10), monthlyBaseTarget: 93.5, rentAmount: 250, rentStartDate: "2027-02-01" }, fundTransfers: [], reconciliations: [], audit: [] }));
+    localStorage.setItem("benadir_categories", JSON.stringify(DEFAULT_CATEGORIES));
+    localStorage.setItem("benadir_brands", JSON.stringify(DEFAULT_BRANDS));
+    localStorage.setItem("benadir_units", JSON.stringify(DEFAULT_UNITS));
+    localStorage.setItem("benadir_opening_complete_v1", "false");
+    window.dispatchEvent(new CustomEvent("benadir-remote-update"));
 
     addAuditLog(
       "FACTORY_RESET",
@@ -3550,6 +3566,13 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       id: `acc-${Date.now()}`,
     };
     setAccounts((prev) => [...prev, newAcc]);
+  };
+
+  const initializeOpeningAccounts = (opening: Omit<PaymentAccount, "id">[]) => {
+    if (currentUser.role !== "Owner" || localStorage.getItem("benadir_opening_complete_v1") === "true") return;
+    setAccounts(opening.map((a, i) => ({ ...a, id: `acc-opening-${Date.now()}-${i}` })));
+    localStorage.setItem("benadir_opening_complete_v1", "true");
+    addAuditLog("OPENING_BALANCES", "ACCOUNTS", `Recorded ${opening.length} opening account balances`);
   };
 
   const deleteExpense = (id: string) => {
@@ -4502,6 +4525,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         setCurrentUser,
         addAuditLog,
         factoryReset,
+        initializeOpeningAccounts,
         preResetBackup,
         createManualBackup,
         restorePreResetBackup,
