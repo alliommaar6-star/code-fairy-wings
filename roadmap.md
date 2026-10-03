@@ -15,8 +15,8 @@
 - [ ] Financial Engine: Petty Cash fund + EVC reconciliation screens (logic ready in financial-engine.ts)
 
 ## New tasks (08:29 UTC)
-- [ ] Hide district/delivery-address select when NewOrderModal is in sale mode
-- [ ] Delivery Rate = business expense: not added to customer bill when business pays; deduct from net profit; show Product Sale Amount / Customer Payment / Delivery Expense / Net separately in sale/order UI
-- [ ] Build Petty Cash Fund page: record cash paid out, cash in, and box balance
-- [ ] Build EVC Plus reconciliation page: compare system records vs EVC balance
-- [ ] SalesOrdersView: add "Sale from Branches" tab next to Order/Sale — branch dropdown, same layout as direct sale, fixed $2 commission per item sold (charged to branch manager)
+- [x] Hide district/delivery-address select when NewOrderModal is in sale mode
+- [x] Delivery Rate = business expense: not added to customer bill when business pays; deduct from net profit; show Product Sale Amount / Customer Payment / Delivery Expense / Net separately in sale/order UI
+- [x] Build Petty Cash Fund page: record cash paid out, cash in, and box balance
+- [x] Build EVC Plus reconciliation page: compare system records vs EVC balance
+- [x] SalesOrdersView: add "Sale from Branches" tab next to Order/Sale — branch dropdown, same layout as direct sale, fixed $2 commission per item sold (charged to branch manager)
