@@ -21,5 +21,5 @@
 - [x] Build EVC Plus reconciliation page: compare system records vs EVC balance
 - [x] SalesOrdersView: add "Sale from Branches" tab next to Order/Sale — branch dropdown, same layout as direct sale, fixed $2 commission per item sold (charged to branch manager)
 - [ ] Connect GitHub API in new workspace (user re-requested after workspace move)
-- [ ] Stock "hadiyad" (qof baa isiiyay, cost $0): option marka stock lagu daro main store (RestockProductModal) iyo branch transfer (BranchSalesPanel) — kharash/expense lama diiwaan gelinayo
-- [ ] Dhammeey tijaabada browser: Branch Admin field (offline role = Owner, nav branches waa la helayaa)
+- [x] Stock "hadiyad" (qof baa isiiyay, cost $0): option marka stock lagu daro main store (RestockProductModal) iyo branch transfer (BranchSalesPanel) — kharash/expense lama diiwaan gelinayo
+- [x] Tijaabada browser: Branch Admin field waa la xaqiijiyay (offline owner mode)
