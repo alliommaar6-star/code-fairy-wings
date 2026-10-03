@@ -1840,21 +1840,21 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       );
     }
 
-    // 3. Deposit paid amount into payment account
+    // 3. Deposit paid amount into payment account.
+    // Match by account type/name, not hardcoded IDs — opening-balance setup replaces IDs.
     if (newSale.amountPaid > 0) {
-      setAccounts((prev) =>
-        prev.map((acc) => {
-          if (
-            (newSale.paymentMethod === "Cash" && acc.id === "acc-cash") ||
-            (newSale.paymentMethod === "EVC Plus" && acc.id === "acc-evc") ||
-            (newSale.paymentMethod === "Premier Bank" && acc.id === "acc-premier") ||
-            (newSale.paymentMethod === "Dahabshiil" && acc.id === "acc-dahab")
-          ) {
-            return { ...acc, balance: acc.balance + newSale.amountPaid };
-          }
-          return acc;
-        }),
-      );
+      setAccounts((prev) => {
+        if (!prev.length) return prev;
+        const method = newSale.paymentMethod;
+        const match =
+          (method === "Cash" && (prev.find(a => a.type === "Cash") || prev.find(a => a.isDefault))) ||
+          (method === "EVC Plus" && prev.find(a => a.type === "Mobile Money")) ||
+          (method === "Premier Bank" && (prev.find(a => a.type === "Bank" && /premier/i.test(a.name)) || prev.find(a => a.type === "Bank"))) ||
+          (method === "Dahabshiil" && (prev.find(a => a.type === "Bank" && /dahab/i.test(a.name)) || prev.find(a => a.type === "Bank"))) ||
+          prev.find(a => a.isDefault) || prev[0];
+        if (!match) return prev;
+        return prev.map((acc) => acc.id === match.id ? { ...acc, balance: acc.balance + newSale.amountPaid } : acc);
+      });
     }
 
     // 4. If delivery or cargo, create delivery record
