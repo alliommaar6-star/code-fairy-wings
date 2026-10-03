@@ -27,6 +27,7 @@ export const BranchSalesPanel: React.FC = () => {
   // Transfer stock
   const [tProd, setTProd] = useState("");
   const [tQty, setTQty] = useState(1);
+  const [tGift, setTGift] = useState(false);
 
   // Sale cart
   const [cart, setCart] = useState<BranchSaleItem[]>([]);
@@ -51,10 +52,16 @@ export const BranchSalesPanel: React.FC = () => {
   const doTransfer = () => {
     const p = products.find((x) => x.id === tProd);
     if (!p || !bid || tQty <= 0) return;
-    if (p.stock < tQty) return alert("Stock-ga bakhaarka dhexe kuma filna.");
-    adjustStock(p.id, -tQty, `U wareejin branch: ${branch?.name}`, "adjustment");
-    addBranchStock(bid, p.id, p.name, tQty);
+    if (tGift) {
+      // Hadiyad: qof baa isiiyay — bakhaarka dhexe lagama jarin, cost malahan.
+      addBranchStock(bid, p.id, p.name, tQty);
+    } else {
+      if (p.stock < tQty) return alert("Stock-ga bakhaarka dhexe kuma filna.");
+      adjustStock(p.id, -tQty, `U wareejin branch: ${branch?.name}`, "adjustment");
+      addBranchStock(bid, p.id, p.name, tQty);
+    }
     setTQty(1);
+    setTGift(false);
   };
 
   const addToCart = () => {
@@ -174,6 +181,10 @@ export const BranchSalesPanel: React.FC = () => {
                 <input type="number" min="1" value={tQty} onChange={(e) => setTQty(parseInt(e.target.value) || 0)} className={`${input} w-20`} />
                 <button onClick={doTransfer} className="px-3 bg-lime-400 text-slate-900 rounded-lg text-xs font-bold whitespace-nowrap">U dir</button>
               </div>
+              <label className="flex items-center gap-2 text-[11px] font-semibold text-emerald-800 cursor-pointer">
+                <input type="checkbox" checked={tGift} onChange={(e) => setTGift(e.target.checked)} className="h-3.5 w-3.5 accent-emerald-600" />
+                Hadiyad — qof baa isiiyay (bakhaarka dhexe lagama jarin, cost $0)
+              </label>
               <table className="w-full text-xs">
                 <thead className="text-slate-500"><tr><th className="text-left py-1">Alaab</th><th className="text-right">Taal</th></tr></thead>
                 <tbody>
