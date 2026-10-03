@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { useStore } from "../../context/StoreContext";
 import { SystemManagement } from "./SystemManagement";
+import { useStaffRole } from "@/lib/roles";
 
 export const SettingsView: React.FC = () => {
   const {
@@ -44,7 +45,7 @@ export const SettingsView: React.FC = () => {
   const [resetCompleted, setResetCompleted] = useState(false);
   const [resetError, setResetError] = useState("");
 
-  const isOwner = currentUser.role === "Owner";
+  const isOwner = useStaffRole() === "owner";
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
