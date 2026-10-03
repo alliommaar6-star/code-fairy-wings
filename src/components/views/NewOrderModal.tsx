@@ -430,26 +430,28 @@ export const NewOrderModal: React.FC<NewOrderModalProps> = ({
                     />
                   </div>
                 </div>
-                <div>
-                  <label className="block text-[11px] font-semibold text-slate-600 mb-1">
-                    Degmada (Optional)
-                  </label>
-                  <select
-                    value={newCustAddress}
-                    onChange={(e) => {
-                      setNewCustAddress(e.target.value);
-                      setDeliveryAddress(e.target.value);
-                    }}
-                    className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 bg-white"
-                  >
-                    <option value="">Dooro degmada</option>
-                    {MOGADISHU_DISTRICTS.map((district) => (
-                      <option key={district} value={district}>
-                        {district}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                {!isSaleMode && (
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-600 mb-1">
+                      Degmada (Optional)
+                    </label>
+                    <select
+                      value={newCustAddress}
+                      onChange={(e) => {
+                        setNewCustAddress(e.target.value);
+                        setDeliveryAddress(e.target.value);
+                      }}
+                      className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 bg-white"
+                    >
+                      <option value="">Dooro degmada</option>
+                      {MOGADISHU_DISTRICTS.map((district) => (
+                        <option key={district} value={district}>
+                          {district}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -475,23 +477,25 @@ export const NewOrderModal: React.FC<NewOrderModalProps> = ({
                   </select>
                 </div>
 
-                <div>
-                  <label className="block text-[11px] font-semibold text-slate-600 mb-1">
-                    Ciwaanka Gaarsiinta (Delivery Address)
-                  </label>
-                  <select
-                    value={deliveryAddress}
-                    onChange={(e) => setDeliveryAddress(e.target.value)}
-                    className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 bg-white"
-                  >
-                    <option value="">Dooro degmada</option>
-                    {MOGADISHU_DISTRICTS.map((district) => (
-                      <option key={district} value={district}>
-                        {district}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                {!isSaleMode && (
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-600 mb-1">
+                      Ciwaanka Gaarsiinta (Delivery Address)
+                    </label>
+                    <select
+                      value={deliveryAddress}
+                      onChange={(e) => setDeliveryAddress(e.target.value)}
+                      className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 bg-white"
+                    >
+                      <option value="">Dooro degmada</option>
+                      {MOGADISHU_DISTRICTS.map((district) => (
+                        <option key={district} value={district}>
+                          {district}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
               </div>
             )}
           </div>
