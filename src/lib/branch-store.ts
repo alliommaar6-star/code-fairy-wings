@@ -1,7 +1,7 @@
 import { useSyncExternalStore } from "react";
 
 // Branch sales (e.g. Garoowe, Kismaayo): own stock per branch, own sales, fixed commission per sale.
-export type Branch = { id: string; name: string; commission: number; createdAt: string };
+export type Branch = { id: string; name: string; manager: string; commission: number; createdAt: string };
 export type BranchSaleItem = {
   productId: string;
   productName: string;
@@ -13,6 +13,7 @@ export type BranchSale = {
   id: string;
   branchId: string;
   branchName: string;
+  managerName?: string;
   date: string; // YYYY-MM-DD
   time: string;
   items: BranchSaleItem[];
@@ -87,14 +88,14 @@ export function useBranches() {
   );
 }
 
-export function addBranch(name: string, commission: number) {
+export function addBranch(name: string, manager: string, commission: number) {
   load();
   set({
     ...state,
-    branches: [...state.branches, { id: uid("BR"), name: name.trim(), commission, createdAt: new Date().toISOString() }],
+    branches: [...state.branches, { id: uid("BR"), name: name.trim(), manager: manager.trim(), commission, createdAt: new Date().toISOString() }],
   });
 }
-export function updateBranch(id: string, patch: Partial<Pick<Branch, "name" | "commission">>) {
+export function updateBranch(id: string, patch: Partial<Pick<Branch, "name" | "manager" | "commission">>) {
   load();
   set({ ...state, branches: state.branches.map((b) => (b.id === id ? { ...b, ...patch } : b)) });
 }
@@ -131,6 +132,7 @@ export function recordBranchSale(branchId: string, items: BranchSaleItem[], note
     id: uid("BS"),
     branchId,
     branchName: br.name,
+    managerName: br.manager || undefined,
     date: todayISO(),
     time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
     items,

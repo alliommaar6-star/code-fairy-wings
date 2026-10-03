@@ -34,6 +34,7 @@ export const RestockProductModal: React.FC<RestockProductModalProps> = ({
   const [supplierName, setSupplierName] = useState("");
   const [notes, setNotes] = useState("");
   const [selectedAccountId, setSelectedAccountId] = useState("");
+  const [isGift, setIsGift] = useState(false);
 
   // Sync initial fields when product opens
   React.useEffect(() => {
@@ -44,13 +45,14 @@ export const RestockProductModal: React.FC<RestockProductModalProps> = ({
       setReferenceNo("");
       setSupplierName("");
       setNotes("");
+      setIsGift(false);
     }
   }, [product]);
 
   if (!product) return null;
 
   const qty = parseInt(quantity, 10) || 0;
-  const cost = parseFloat(purchaseCost) || 0;
+  const cost = isGift ? 0 : parseFloat(purchaseCost) || 0;
   const newSelling = parseFloat(sellingPrice) || product.sellingPrice;
 
   // Real-time calculations
@@ -71,8 +73,8 @@ export const RestockProductModal: React.FC<RestockProductModalProps> = ({
     addStockToProduct(product.id, qty, cost, newSelling, {
       supplierName: supplierName.trim() || undefined,
       referenceNo: referenceNo.trim() || undefined,
-      notes: notes.trim() || undefined,
-      accountId: selectedAccountId || undefined,
+      notes: (isGift ? "Hadiyad (qof baa isiiyay — cost $0). " : "") + (notes.trim() || "") || undefined,
+      accountId: isGift ? undefined : selectedAccountId || undefined,
     });
 
     onClose();
@@ -164,10 +166,11 @@ export const RestockProductModal: React.FC<RestockProductModalProps> = ({
               step="0.01"
               min="0"
               required
-              value={purchaseCost}
+              disabled={isGift}
+              value={isGift ? "0" : purchaseCost}
               onChange={(e) => setPurchaseCost(e.target.value)}
               placeholder="0.00"
-              className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-mono font-bold text-slate-900 focus:ring-2 focus:ring-slate-900"
+              className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-mono font-bold text-slate-900 focus:ring-2 focus:ring-slate-900 disabled:opacity-50"
             />
             <p className="text-[10px] text-slate-400 mt-1">Can differ from previous cost</p>
           </div>
@@ -188,6 +191,20 @@ export const RestockProductModal: React.FC<RestockProductModalProps> = ({
             <p className="text-[10px] text-slate-400 mt-1">Leave as-is or adjust</p>
           </div>
         </div>
+
+        {/* Gift / donated stock option */}
+        <label className="flex items-start gap-2.5 p-3 rounded-xl bg-emerald-50 border border-emerald-200 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={isGift}
+            onChange={(e) => setIsGift(e.target.checked)}
+            className="mt-0.5 h-4 w-4 accent-emerald-600"
+          />
+          <span>
+            <span className="block text-xs font-bold text-emerald-900">Hadiyad — qof baa isiiyay (cost $0)</span>
+            <span className="block text-[10px] text-emerald-700">Alaabtan lacag laguma iibsan; kharash ama expense lama diiwaan gelinayo, cost-ka waa $0.</span>
+          </span>
+        </label>
 
         {/* Automatic Weighted Average Valuation Card */}
         <div className="p-4 rounded-xl bg-indigo-50/60 border border-indigo-200 space-y-2.5">
