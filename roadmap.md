@@ -11,4 +11,5 @@
 - [x] Dashboard date-range filter for sales/profit totals and day-by-day comparison chart
 - [x] Dashboard: PDF/CSV export, previous-period comparison, per-branch filter
 - [x] Financial Engine (targets core): daily target, deficit carry-forward, same-month surplus, petty cash, EVC reconciliation, double-entry (Grand Master prompt)
-- [ ] Branches: ensure stock-to-branch recording by branch name is clear/visible in the system
+- [x] Branches: ensure stock-to-branch recording by branch name is clear/visible in the system
+- [ ] Financial Engine: Petty Cash fund + EVC reconciliation screens (logic ready in financial-engine.ts)
