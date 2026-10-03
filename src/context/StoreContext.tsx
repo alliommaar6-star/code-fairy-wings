@@ -2757,9 +2757,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
-  const factoryReset = (confirmCode: string = "RESET", overrideRole?: string): boolean => {
-    const role = overrideRole || currentUser.role;
-    if (role !== "Owner") {
+  const factoryReset = (confirmCode: string = "RESET", _overrideRole?: string): boolean => {
+    if (currentUser.role !== "Owner") {
       return false;
     }
     if (confirmCode.trim() !== "RESET") {
@@ -2769,7 +2768,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     // MANDATORY REQUIREMENT: Backup/restore point MUST exist before reset
     createManualBackup("Pre-Factory Reset Authoritative Snapshot");
     const independentKeys = ["benadir_branches_v1", "benadir_tracking_v1", "benadir_journal_manual_v1", "benadir_ai_accountant_chat_v1", "benadir_finengine_v1"];
-    localStorage.setItem("benadir_pre_reset_extra_v1", JSON.stringify(Object.fromEntries(independentKeys.map(key => [key, localStorage.getItem(key) || ""])))) ;
+    localStorage.setItem("benadir_pre_reset_extra_v1", JSON.stringify(Object.fromEntries(independentKeys.map(key => [key, localStorage.getItem(key) || ""]))));
 
     // 1. Wipe all business / sample / test data
     setProducts([]);
@@ -3576,7 +3575,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const initializeOpeningAccounts = (opening: Omit<PaymentAccount, "id">[]) => {
-    if (currentUser.role !== "Owner" || localStorage.getItem("benadir_opening_complete_v1") === "true") return;
+    if (currentUser.role !== "Owner" || localStorage.getItem("benadir_opening_complete_v1") === "true" || !opening.length || opening.some(a => !Number.isFinite(a.balance) || a.balance < 0)) return;
     setAccounts(opening.map((a, i) => ({ ...a, id: `acc-opening-${Date.now()}-${i}` })));
     localStorage.setItem("benadir_opening_complete_v1", "true");
     addAuditLog("OPENING_BALANCES", "ACCOUNTS", `Recorded ${opening.length} opening account balances`);

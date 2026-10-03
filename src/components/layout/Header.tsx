@@ -52,7 +52,7 @@ export const Header: React.FC<HeaderProps> = ({
   const quickAddRef = useRef<HTMLDivElement>(null);
   const notifRef = useRef<HTMLDivElement>(null);
 
-  const { todayNetProfit, todayTarget, todayRemainingTarget } = getTodayStats();
+  const { todayNetProfit, todayTarget } = getTodayStats();
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
