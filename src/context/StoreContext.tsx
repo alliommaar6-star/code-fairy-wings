@@ -2759,7 +2759,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
-  const factoryReset = (confirmCode: string = "RESET", _overrideRole?: string): boolean => {
+  const factoryReset = (confirmCode: string = "RESET"): boolean => {
     if (authenticatedRole !== "owner") {
       return false;
     }

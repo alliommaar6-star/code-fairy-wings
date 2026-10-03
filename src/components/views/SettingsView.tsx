@@ -242,9 +242,8 @@ export const SettingsView: React.FC = () => {
             <div className="space-y-1 text-xs">
               <p className="font-black text-emerald-950 text-sm">FACTORY RESET COMPLETE</p>
               <p>
-                All test and sample business data have been wiped clean. System schemas, roles,
-                configuration, and security foundations remain intact and ready for real production
-                commercial data.
+                Business records and account balances have been cleared. A restore point was saved.
+                Enter opening balances when the setup screen appears.
               </p>
             </div>
           </div>
@@ -261,8 +260,8 @@ export const SettingsView: React.FC = () => {
               sales, customer debt records, inventory movements, purchases, and expenses.
             </li>
             <li>
-              <strong className="text-slate-700">Preserves:</strong> Database schema, storage
-              architecture, accounts definitions, user roles (RBAC/RLS), and general configuration.
+              <strong className="text-slate-700">Preserves:</strong> Staff access and store settings;
+              a restore point is created before clearing business records.
             </li>
           </ul>
         </div>
@@ -332,12 +331,13 @@ export const SettingsView: React.FC = () => {
               <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs space-y-2">
                 <p className="font-bold flex items-center gap-1.5 text-amber-950">
                   <AlertTriangle className="w-4 h-4 text-amber-600" />
-                  Warning: Irreversible Business Data Deletion
+                  Warning: Business data will be cleared
                 </p>
                 <p>
                   You are about to purge all products, inventory ledgers, sales receipts, customer
                   debts, and transaction movements. System infrastructure, user accounts, and
-                  financial accounts definitions will be preserved.
+                  financial account balances will be cleared. A restore point will be kept; you will
+                  enter opening account details again.
                 </p>
               </div>
 
