@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { useStore } from "../../context/StoreContext";
+import { FinancialStatementsPanel } from "./FinancialStatementsPanel";
 import {
   buildBooks,
   booksSnapshot,
@@ -127,7 +128,7 @@ export function AccountantView() {
       {tab === "journal" && <Journal entries={books.entries} />}
       {tab === "ledger" && <Ledger ledger={books.ledger} />}
       {tab === "trial" && <Trial books={books} />}
-      {tab === "statements" && <Statements books={books} />}
+      {tab === "statements" && <FinancialStatementsPanel />}
     </div>
   );
 }
