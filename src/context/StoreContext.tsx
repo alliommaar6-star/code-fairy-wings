@@ -2821,8 +2821,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     localStorage.setItem("benadir_ai_accountant_chat_v1", "[]");
     localStorage.setItem("benadir_ai_stock_advisor_v1", "[]");
     localStorage.setItem("benadir_cargo_companies_v1", "[]");
-    localStorage.setItem("benadir_delivery_v1", "[]");
-    localStorage.setItem("benadir_payment_accounts_v1", "[]");
+    localStorage.setItem("benadir_delivery_v1", JSON.stringify({ companies: [], locations: [], drivers: [] }));
+    localStorage.setItem("benadir_payment_accounts_v1", JSON.stringify({ wallet: [], merchant: [], bank: [] }));
     localStorage.setItem("benadir_finengine_v1", JSON.stringify({ config: { systemStartDate: new Date().toISOString().slice(0, 10), monthlyBaseTarget: 93.5, rentAmount: 250, rentStartDate: "2027-02-01" }, fundTransfers: [], reconciliations: [], audit: [] }));
     localStorage.setItem("benadir_categories", JSON.stringify(DEFAULT_CATEGORIES));
     localStorage.setItem("benadir_brands", JSON.stringify(DEFAULT_BRANDS));
