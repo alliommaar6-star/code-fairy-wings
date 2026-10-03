@@ -27,3 +27,5 @@
 - [ ] Unify header/dashboard target difference; export dashboard KPIs and filtered activity CSV; searchable date/type-filtered activity details
 - [ ] Owner-confirmed complete business reset with backup and clean first-use opening balances for Cash/Bank/EVC/e-Dahab
 - [ ] Centered hidden balance display, PIN-revealed only for current view
+- [ ] Dashboard: count business-paid delivery costs as expenses without double-deducting net profit; emphasize Today target over weekly/monthly; comparison defaults to daily Today vs yesterday
+- [ ] Dashboard activity: search, date and event-type filters with full detail view (repeated request)
