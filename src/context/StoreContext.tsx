@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { branchTotalsFor } from "../lib/branch-store";
+import { computeEngine, getFinEngineState } from "../lib/financial-engine";
+import { buildDailyNetMap } from "../lib/daily-net";
 import { nextCode, uniqueCode } from "../utils/codes";
 import {
   Product,
@@ -4237,7 +4239,15 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       .reduce((sum, i) => sum + i.amount, 0);
     const todayNetProfit = todayProfit + todayIncome - todayExpenses;
 
-    const todayTarget = settings.dailyTarget || 0;
+    // Daily target comes from the Financial Engine (base target adjusted by
+    // deficit carry-forward and same-month surplus). Falls back to the manual
+    // setting if the engine has no record for today.
+    const engine = computeEngine(
+      todayStr,
+      getFinEngineState().config,
+      buildDailyNetMap(sales, orders, expenses, incomes),
+    );
+    const todayTarget = engine.today?.adjustedTarget ?? settings.dailyTarget ?? 0;
     // Daily target is measured against net profit.
     const todayRemainingTarget = Math.max(0, todayTarget - todayNetProfit);
     const targetProgressPct = Math.min(
