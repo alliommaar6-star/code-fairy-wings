@@ -2738,6 +2738,13 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (s.brands) setBrands(s.brands);
       if (s.units) setUnits(s.units);
 
+      try {
+        const extra = JSON.parse(localStorage.getItem("benadir_pre_reset_extra_v1") || "null") as Record<string, string> | null;
+        if (extra) Object.entries(extra).forEach(([key, value]) => localStorage.setItem(key, value));
+        window.dispatchEvent(new CustomEvent("benadir-remote-update"));
+      } catch { /* Older backups may not have independent stores. */ }
+      localStorage.setItem("benadir_opening_complete_v1", "true");
+
       localStorage.removeItem("benadir_factory_reset_done");
       addAuditLog(
         "RESTORE_BACKUP",
@@ -2761,6 +2768,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     // MANDATORY REQUIREMENT: Backup/restore point MUST exist before reset
     createManualBackup("Pre-Factory Reset Authoritative Snapshot");
+    const independentKeys = ["benadir_branches_v1", "benadir_tracking_v1", "benadir_journal_manual_v1", "benadir_ai_accountant_chat_v1", "benadir_finengine_v1"];
+    localStorage.setItem("benadir_pre_reset_extra_v1", JSON.stringify(Object.fromEntries(independentKeys.map(key => [key, localStorage.getItem(key) || ""])))) ;
 
     // 1. Wipe all business / sample / test data
     setProducts([]);
@@ -2802,9 +2811,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     localStorage.setItem("benadir_drivers", JSON.stringify([]));
 
     // Reset accounts to 0 balance for clean commercial start
-    setAccounts((prev) =>
-      [],
-    );
+    setAccounts([]);
 
     // Reset the independent offline-first stores as well as the context arrays.
     // Keep the pre-reset backup for recovery and write explicit empty values so they sync.
