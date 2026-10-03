@@ -45,7 +45,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
     addAccount({
       name: newAccName.trim(),
       type: newAccType,
-      accountNumber: newAccNumber.trim() || undefined,
+      accountNumber: maskAccountNumber(newAccNumber),
       balance: parseFloat(newAccBalance) || 0,
       currency: "USD",
       isActive: true,
