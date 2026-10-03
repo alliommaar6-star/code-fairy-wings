@@ -318,7 +318,22 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate, onOpen
           ); })}</div>
         </section>
 
-        <section aria-label="Daily performance" className="grid gap-3 lg:grid-cols-[1.35fr_1fr_1fr]">
+        <section aria-label="Targets" className="grid grid-cols-1 gap-2 md:grid-cols-3">
+          {tgtRows.map(r => { const remaining = Math.max(0, r.target - r.net); const extra = Math.max(0, r.net - r.target); const isDaily = r.label === 'Daily'; return (
+            <div key={r.label} id={`kpi-target-${r.label.toLowerCase()}`} onClick={() => onNavigate('targets')} className={`cursor-pointer border border-border bg-card p-3.5 transition-colors hover:bg-accent ${isDaily ? 'border-primary p-5' : ''}`}>
+              <div className="flex items-center justify-between"><span className="dashboard-kicker text-muted-foreground">{isDaily ? 'Today' : r.label} target</span><Target className="h-4 w-4 text-[var(--dash-clay)]" /></div>
+              {isDaily && <strong className={`mt-2 block text-3xl font-bold sm:text-4xl ${extra > 0 ? 'text-positive' : remaining > 0 ? 'text-destructive' : 'text-foreground'}`}>{extra > 0 ? '+' : remaining > 0 ? '-' : ''}{money(extra > 0 ? extra : remaining)}</strong>}
+              <div className="mt-2 space-y-1 text-xs">
+                <div className="flex justify-between"><span className="text-muted-foreground">Target</span><strong className="text-foreground">{money(r.target)}</strong></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Net profit</span><strong className="text-foreground">{money(r.net)}</strong></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Remaining</span><strong className="text-destructive">{money(remaining)}</strong></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Dheeri (extra)</span><strong className="text-primary">{money(extra)}</strong></div>
+              </div>
+            </div>
+          ); })}
+        </section>
+
+        <section aria-label="Daily performance" className="grid gap-3 lg:grid-cols-[1.35fr_1fr]">
           <div id="kpi-today-net-profit" className="dashboard-feature dashboard-feature-profit flex min-h-[228px] flex-col justify-between p-5 sm:p-6">
             <div className="flex items-center justify-between"><span className="dashboard-kicker text-primary-foreground/70">NET PROFIT / TODAY</span><ArrowUpRight className="h-5 w-5 text-primary-foreground/70" /></div>
             <div><div className="dashboard-heading break-all text-4xl font-bold text-primary-foreground sm:text-5xl">{money(pTodayC.net)}</div><p className="mt-1 text-xs text-primary-foreground/75">Gross profit + other income − expenses</p></div>
@@ -332,10 +347,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate, onOpen
               <strong className="text-primary-foreground">{money(monthProfit)}</strong>
             </label>
           </div>
-          <Button id="kpi-today-target" variant="ghost" onClick={() => onNavigate('targets')} className="dashboard-feature dashboard-feature-target group flex h-auto min-h-[228px] flex-col items-start justify-between whitespace-normal border border-border p-5 text-left hover:bg-accent sm:p-6">
-            <div className="flex w-full items-center justify-between"><span className="dashboard-kicker text-muted-foreground">TODAY'S TARGET · {targetStatus}</span><Target className="h-5 w-5 text-[var(--dash-clay)]" /></div>
-            <div className="w-full"><div className={`dashboard-heading break-all text-3xl font-bold sm:text-4xl ${targetDifference > 0 ? 'text-positive' : targetDifference < 0 ? 'text-destructive' : 'text-foreground'}`}>{targetAmount}</div><p className="mt-2 text-xs font-medium text-muted-foreground">Target {money(todayTarget)} · Net profit {money(todayNetProfit)}</p><div className="mt-3 h-1 w-full bg-muted"><div className="h-full bg-[var(--dash-forest)] transition-[width] duration-500" style={{ width: `${targetProgressPct}%` }} /></div></div>
-          </Button>
           <div className="dashboard-feature dashboard-feature-summary flex min-h-[172px] flex-col justify-between border border-border p-5 sm:p-6"><span className="dashboard-kicker text-muted-foreground">SELECTED PERIOD</span><div className="space-y-2 text-sm"><div className="flex items-center justify-between border-b border-border pb-2"><span className="text-muted-foreground">Sales</span><strong className="font-semibold text-foreground">{money(period.sales)}</strong></div><div className="flex items-center justify-between border-b border-border pb-2"><span className="text-muted-foreground">Gross profit</span><strong className="font-semibold text-foreground">{money(period.gross)}</strong></div><div className="flex items-center justify-between"><span className="text-muted-foreground">Expenses</span><strong className="font-semibold text-[var(--dash-clay)]">{money(period.expenses)}</strong></div></div></div>
         </section>
 
@@ -347,21 +358,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate, onOpen
                 <div className="flex justify-between"><span className="text-muted-foreground">Maanta</span><strong className="text-foreground">{money(v.today)}</strong></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Bishan (1 – maanta)</span><strong className="text-foreground">{money(v.month)}</strong></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Sannadka (1/1 – maanta)</span><strong className="text-foreground">{money(v.year)}</strong></div>
-              </div>
-            </div>
-          ); })}
-        </section>
-
-        <section aria-label="Targets" className="grid grid-cols-1 gap-2 md:grid-cols-[1.6fr_1fr_1fr]">
-          {tgtRows.map(r => { const remaining = Math.max(0, r.target - r.net); const extra = Math.max(0, r.net - r.target); return (
-            <div key={r.label} id={`kpi-target-${r.label.toLowerCase()}`} className={`border border-border bg-card p-3.5 ${r.label === 'Daily' ? 'border-primary p-5' : ''}`}>
-              <div className="flex items-center justify-between"><span className="dashboard-kicker text-muted-foreground">{r.label === 'Daily' ? 'Today' : r.label} target</span><Target className="h-4 w-4 text-[var(--dash-clay)]" /></div>
-              {r.label === 'Daily' && <strong className={`mt-2 block text-3xl font-bold sm:text-4xl ${extra > 0 ? 'text-positive' : remaining > 0 ? 'text-destructive' : 'text-foreground'}`}>{extra > 0 ? '+' : remaining > 0 ? '-' : ''}{money(extra > 0 ? extra : remaining)}</strong>}
-              <div className="mt-2 space-y-1 text-xs">
-                <div className="flex justify-between"><span className="text-muted-foreground">Target</span><strong className="text-foreground">{money(r.target)}</strong></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Net profit</span><strong className="text-foreground">{money(r.net)}</strong></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Remaining</span><strong className="text-destructive">{money(remaining)}</strong></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Dheeri (extra)</span><strong className="text-primary">{money(extra)}</strong></div>
               </div>
             </div>
           ); })}
