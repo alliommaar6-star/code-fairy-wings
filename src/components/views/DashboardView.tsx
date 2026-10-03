@@ -27,7 +27,7 @@ interface DashboardViewProps {
 const money = (n: number) => `$${n.toFixed(2)}`;
 
 export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate, onOpenNewSale, onOpenNewExpense, onOpenNewIncome, onOpenReceivePayment, onOpenNewDelivery, onOpenNewAccount }) => {
-  const { currentUser, getTodayStats, getPeriodStats, sales, orders, incomes, expenses, products, purchases, returns, inventoryMovements, supplierPayments, transfers, auditLogs, deliveries, cargoShipments } = useStore();
+  const { currentUser, getTodayStats, getPeriodStats, sales, orders, incomes, expenses, products, purchases, returns, inventoryMovements, supplierPayments, transfers, auditLogs, deliveries, cargoShipments, accounts } = useStore();
   const { todayNetProfit, todayTarget, targetProgressPct } = getTodayStats();
   const targetDifference = todayNetProfit - todayTarget;
   const targetStatus = targetDifference > 0 ? 'DHEERI' : targetDifference < 0 ? 'DHIMAN' : 'LA GAARAY';
@@ -44,6 +44,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate, onOpen
   const [activityTo, setActivityTo] = useState('');
   const [selectedActivity, setSelectedActivity] = useState<string | null>(null);
   const [balanceVisible, setBalanceVisible] = useState(false);
+  const [personalVisible, setPersonalVisible] = useState(false);
   const [pinOpen, setPinOpen] = useState(false);
   const [pin, setPin] = useState('');
   const [pinError, setPinError] = useState('');
@@ -166,6 +167,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate, onOpen
   const monthEnd = profitMonth === todayKey.slice(0, 7) ? todayKey : format(new Date(Number(profitMonth.slice(0, 4)), Number(profitMonth.slice(5, 7)), 0), 'yyyy-MM-dd');
   const monthProfit = compute(`${profitMonth}-01`, monthEnd).net;
   const allTimeProfit = compute('0000-01-01', todayKey).net;
+  // Personal tracker: opening money (saved once) + all-time net profit only.
+  const personalBase = (() => {
+    if (typeof window === 'undefined') return 0;
+    const saved = localStorage.getItem('benadir_personal_base_v1');
+    if (saved !== null && Number.isFinite(Number(saved))) return Number(saved);
+    const opening = accounts.filter(a => a.id.startsWith('acc-opening-')).reduce((s, a) => s + (a.balance || 0), 0);
+    const base = opening || totalCashInHand;
+    if (base > 0) localStorage.setItem('benadir_personal_base_v1', String(base));
+    return base;
+  })();
   const firstRecord = [todayKey, ...sales.map(x => x.date), ...orders.map(x => x.date), ...branches.sales.map(x => x.date), ...incomes.map(x => x.date), ...expenses.map(x => x.date)].filter(Boolean).sort()[0];
   const monthOptions: string[] = [];
   for (let y = Number(firstRecord.slice(0, 4)); y <= Number(todayKey.slice(0, 4)); y++) {
@@ -253,6 +264,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate, onOpen
             <strong className="text-2xl font-bold text-foreground sm:text-3xl">{balanceVisible ? money(totalCashInHand) : '••••••'}</strong>
             <Button size="sm" variant="ghost" onClick={() => { if (balanceVisible) setBalanceVisible(false); else { setPin(''); setPinError(''); setPinOpen(true); } }} aria-label={balanceVisible ? 'Qari lacagta' : 'Arag lacagta'}>{balanceVisible ? <EyeOff /> : <Eye />} {balanceVisible ? 'Qari' : 'Arag'}</Button>
           </div>
+          <div className="flex flex-col items-end gap-2">
+          <div className="flex items-center gap-2 border border-border bg-card px-3 py-1.5" aria-label="Lacagta + Net Profit (gaar ahaan)">
+            <div className="text-right">
+              <span className="dashboard-kicker block text-muted-foreground">Bilow + Net Profit</span>
+              <strong className="text-base font-bold text-foreground">{personalVisible && balanceVisible ? money(personalBase + allTimeProfit) : '••••••'}</strong>
+            </div>
+            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => { if (personalVisible && balanceVisible) setPersonalVisible(false); else { setPersonalVisible(true); if (!balanceVisible) { setPin(''); setPinError(''); setPinOpen(true); } } }} aria-label={personalVisible && balanceVisible ? 'Qari' : 'Arag'}>{personalVisible && balanceVisible ? <EyeOff /> : <Eye />}</Button>
+          </div>
           <div className="flex flex-wrap items-center gap-2">
             <div className="flex gap-1" aria-label="Date presets">
               <Button size="sm" variant={lengthDays === 1 && start === format(new Date(), 'yyyy-MM-dd') ? 'default' : 'outline'} onClick={() => setPreset(1)}>Today</Button>
@@ -266,6 +285,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate, onOpen
                 <div className="flex items-center justify-between gap-3 border-t border-border pt-3"><span className="text-xs text-muted-foreground">{draftRange?.from ? format(draftRange.from, 'MMM d, yyyy') : 'Start'} – {draftRange?.to ? format(draftRange.to, 'MMM d, yyyy') : 'End'}</span><Button size="sm" disabled={!draftRange?.from || !draftRange?.to} onClick={() => { if (draftRange?.from && draftRange.to) { setRange(draftRange); setRangeOpen(false); } }}>Apply</Button></div>
               </PopoverContent>
             </Popover>
+          </div>
           </div>
         </section>
 
