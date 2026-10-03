@@ -25,7 +25,6 @@ export const SettingsView: React.FC = () => {
     settings,
     updateSettings,
     currentUser,
-    resetToDemoData,
     factoryReset,
     preResetBackup,
     restorePreResetBackup,
@@ -79,15 +78,6 @@ export const SettingsView: React.FC = () => {
       setResetConfirmText("");
     } else {
       setResetError("Factory reset failed. Please ensure you have Owner privileges.");
-    }
-  };
-
-  const handleResetDemoData = () => {
-    if (
-      confirm("Reload Benadir Store sample commercial demonstration catalogue and ledger data?")
-    ) {
-      resetToDemoData();
-      alert("Sample demonstration dataset loaded.");
     }
   };
 

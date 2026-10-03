@@ -5,15 +5,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { getSyncStatus, subscribeSync, pendingCount, flush } from '@/lib/cloud-sync';
 import { normalizeRole, ROLE_LABELS, useStaffRole } from '@/lib/roles';
 
-/** Business data keys cleared by Hard Reset (configuration such as settings, payment-account lists, delivery companies is kept). */
-const RESET_KEYS: Record<string, string> = {
-  benadir_products: '[]', benadir_inventory_movements: '[]', benadir_customers: '[]', benadir_suppliers: '[]',
-  benadir_supplier_payments: '[]', benadir_sales: '[]', benadir_orders: '[]', benadir_returns: '[]',
-  benadir_drivers: '[]', benadir_deliveries: '[]', benadir_transfers: '[]', benadir_expenses: '[]',
-  benadir_incomes: '[]', benadir_purchases: '[]', benadir_cargo: '[]', benadir_audit_logs: '[]',
-  benadir_tracking_v1: '{}', benadir_journal_manual_v1: '[]', benadir_ai_accountant_chat_v1: '[]',
-};
-
 const DATA_LABELS: [string, string][] = [
   ['benadir_products', 'Products'], ['benadir_customers', 'Customers'], ['benadir_suppliers', 'Suppliers'],
   ['benadir_sales', 'Sales'], ['benadir_orders', 'Orders'], ['benadir_returns', 'Returns'],
