@@ -125,6 +125,8 @@ export function recordBranchSale(branchId: string, items: BranchSaleItem[], note
   items.forEach((it) => (bs[it.productId] = (bs[it.productId] || 0) - it.quantity));
   const total = items.reduce((s, i) => s + i.quantity * i.unitPrice, 0);
   const cost = items.reduce((s, i) => s + i.quantity * i.costPrice, 0);
+  // Commission is a fixed amount per item sold, charged to the branch manager.
+  const totalQty = items.reduce((s, i) => s + i.quantity, 0);
   const sale: BranchSale = {
     id: uid("BS"),
     branchId,
@@ -134,7 +136,7 @@ export function recordBranchSale(branchId: string, items: BranchSaleItem[], note
     items,
     total,
     cost,
-    commission: br.commission,
+    commission: br.commission * totalQty,
     notes,
   };
   set({ ...state, stock: { ...state.stock, [branchId]: bs }, sales: [sale, ...state.sales] });
