@@ -635,9 +635,31 @@ export const AdminOrderDetailModal: React.FC<AdminOrderDetailModalProps> = ({
             </div>
 
             <div className="pt-2 border-t border-slate-300 flex justify-between text-sm font-black text-slate-900">
-              <span>Wadarta Guud ee Dalabka:</span>
+              <span>Wadarta Guud ee Dalabka (Customer Payment):</span>
               <span className="font-mono text-base">${order.total.toFixed(2)}</span>
             </div>
+
+            {order.deliveryFeePayer === "Business" &&
+              (order.deliveryRate ?? order.deliveryFee ?? 0) > 0 && (
+                <>
+                  <div className="flex justify-between text-amber-700 font-semibold">
+                    <span>Kharashka Gaarsiinta ee Ganacsiga (Delivery Expense):</span>
+                    <span className="font-mono">
+                      -${(order.deliveryRate ?? order.deliveryFee ?? 0).toFixed(2)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-slate-800 font-bold">
+                    <span>Lacagta Saafi ah ka dib Gaarsiinta (Net after Delivery):</span>
+                    <span className="font-mono">
+                      $
+                      {(
+                        order.total -
+                        (order.deliveryRate ?? order.deliveryFee ?? 0)
+                      ).toFixed(2)}
+                    </span>
+                  </div>
+                </>
+              )}
 
             <div className="flex justify-between text-emerald-700 font-bold pt-1">
               <span>Lacagta La Bixiyay (Paid):</span>
