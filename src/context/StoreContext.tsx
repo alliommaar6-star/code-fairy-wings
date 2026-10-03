@@ -1,3 +1,5 @@
+import { calcPurchase, withLandedUnitCosts } from "@/lib/purchase-calc";
+import type { PurchaseStage } from "@/types";
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { useStaffRole } from "@/lib/roles";
 import { branchTotalsFor } from "../lib/branch-store";
@@ -192,6 +194,7 @@ interface StoreContextType {
   getSupplierStatement: (supplierId: string) => SupplierStatementEntry[];
   createPurchase: (purchase: Omit<Purchase, "id" | "purchaseNo" | "createdAt">) => Purchase;
   cancelPurchase: (purchaseId: string, reason?: string) => { success: boolean; message: string };
+  setPurchaseStage: (purchaseId: string, stage: PurchaseStage, note?: string) => void;
   addPurchase: (
     purchase: Omit<Purchase, "id"> | Omit<Purchase, "id" | "purchaseNo" | "createdAt">,
   ) => void;
@@ -3952,6 +3955,32 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     
   };
 
+  const setPurchaseStage = (purchaseId: string, stage: PurchaseStage, note?: string) => {
+    const p = purchases.find((x) => x.id === purchaseId);
+    if (!p || p.status === "Cancelled" || p.stage === "Received" || p.status === "Received") return;
+    const now = new Date().toISOString();
+    const today = now.split("T")[0];
+    const actor = currentUser.name || "Admin";
+    const updated: Purchase = {
+      ...p,
+      stage,
+      status: stage === "Received" ? "Received" : p.status,
+      receivedDate: stage === "Received" ? today : p.receivedDate,
+      receivedBy: stage === "Received" ? actor : p.receivedBy,
+      cargo: p.cargo
+        ? {
+            ...p.cargo,
+            shippedDate: stage === "Shipped" ? p.cargo.shippedDate || today : p.cargo.shippedDate,
+            arrivedDate: stage === "Arrived" ? p.cargo.arrivedDate || today : p.cargo.arrivedDate,
+          }
+        : p.cargo,
+      stageHistory: [...(p.stageHistory || []), { stage, at: now, actor, note }],
+      updatedAt: now,
+    };
+    setPurchases((prev) => prev.map((x) => (x.id === purchaseId ? updated : x)));
+    if (stage === "Received") applyPurchaseReceipt(updated);
+  };
+
   const createPurchase = (
     purchaseData: Omit<Purchase, "id" | "purchaseNo" | "createdAt"> & { purchaseNo?: string },
   ): Purchase => {
@@ -3973,9 +4002,12 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
     const id = `pu-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`;
 
+    const purchaseType = purchaseData.purchaseType || "LOCAL";
+    const landedItems = withLandedUnitCosts({ ...purchaseData, purchaseType });
+    const calc = calcPurchase({ ...purchaseData, purchaseType });
     const subtotal = purchaseData.subtotal ?? purchaseData.items.reduce((s, it) => s + it.total, 0);
     const discount = purchaseData.discount || 0;
-    const totalAmount = purchaseData.totalAmount ?? Math.max(0, subtotal - discount);
+    const totalAmount = purchaseData.totalAmount ?? calc.supplierPayable;
     const paidAmount = purchaseData.paidAmount || 0;
     const supplierBalance = Math.max(0, totalAmount - paidAmount);
 
@@ -4000,8 +4032,15 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       },
     ];
 
+    const initialStatus = purchaseData.status || "Received";
+    const stage = purchaseData.stage || (initialStatus === "Received" ? "Received" : "Ordered");
     const newPurchase: Purchase = {
       ...purchaseData,
+      items: landedItems,
+      purchaseType,
+      stage,
+      stageHistory: [{ stage, at: now, actor: currentUser.name || "Admin" }],
+      receivedDate: initialStatus === "Received" ? dateOnly : undefined,
       id,
       purchaseNo,
       date: dateOnly,
@@ -4027,6 +4066,37 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setPurchases((prev) => [newPurchase, ...prev]);
 
     if (newPurchase.status === "Received") applyPurchaseReceipt(newPurchase);
+
+    // Operational EXPENSES (never part of product cost) → Expenses ledger
+    if (newPurchase.accountId) {
+      const acc = accounts.find((a) => a.id === newPurchase.accountId);
+      const lines: [string, number | undefined][] = [
+        ["Xamaali", newPurchase.expenses?.xamaali],
+        ["Transportation", newPurchase.expenses?.transportation],
+        [newPurchase.expenses?.otherNote || "Other", newPurchase.expenses?.other],
+      ];
+      if (purchaseType === "INTERNATIONAL") {
+        const ce = newPurchase.cargo?.expenses;
+        lines.push(["Cargo Xamaali", ce?.xamaali], ["Cargo Transportation", ce?.transportation], [ce?.otherNote || "Cargo Other", ce?.other]);
+      }
+      const exps: Expense[] = lines
+        .filter(([, a]) => (a || 0) > 0)
+        .map(([label, a], i) => ({
+          id: `exp-${Date.now()}-${i}-${Math.random().toString(36).slice(2, 5)}`,
+          title: `${label} — ${purchaseNo}`,
+          category: "Purchase Expense",
+          amount: a || 0,
+          date: dateOnly,
+          paidFromAccountId: newPurchase.accountId!,
+          paidFromAccountName: acc?.name || newPurchase.accountName || "",
+          notes: `Purchase ${purchaseNo} (${purchaseType}) operational expense`,
+        }) as Expense);
+      if (exps.length) {
+        const total = exps.reduce((s, e) => s + e.amount, 0);
+        setExpenses((prev) => [...exps, ...prev]);
+        setAccounts((prev) => prev.map((a) => (a.id === newPurchase.accountId ? { ...a, balance: a.balance - total } : a)));
+      }
+    }
 
     // 4. Update supplier balance and totals
     if (newPurchase.supplierId) {
@@ -4540,6 +4610,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         getSupplierStatement,
         createPurchase,
         cancelPurchase,
+        setPurchaseStage,
         addPurchase,
         addPurchaseAttachment,
         removePurchaseAttachment,
