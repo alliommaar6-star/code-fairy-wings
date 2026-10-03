@@ -11,6 +11,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import type { NavSection } from '../layout/Sidebar';
 import { computeEngine, useFinEngine } from '@/lib/financial-engine';
 import { buildDailyNetMap, businessDeliveryCost } from '@/lib/daily-net';
+import { canAccess, useStaffRole } from '@/lib/roles';
 
 interface DashboardViewProps {
   onNavigate: (tab: NavSection) => void;
@@ -29,6 +30,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate, onOpen
   const { todayNetProfit, todayTarget, targetProgressPct } = getTodayStats();
   const { totalRemainingDebt, totalCashInHand, totalStockValueSelling } = getPeriodStats();
   const branches = useBranches();
+  const role = useStaffRole();
   const [range, setRange] = useState<DateRange>(() => ({ from: new Date(), to: new Date() }));
   const [comparisonDays, setComparisonDays] = useState(16);
   const [activityQuery, setActivityQuery] = useState('');
@@ -162,7 +164,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate, onOpen
   ];
   type Activity = { id: string; date: string; type: string; title: string; detail: string; amount?: number; section: NavSection };
   const activity: Activity[] = [];
-  const addActivity = (row: Activity) => { if (row.date.slice(0, 10) >= start && row.date.slice(0, 10) <= end) activity.push(row); };
+  const addActivity = (row: Activity) => { if (canAccess(role, row.section) && row.date.slice(0, 10) >= start && row.date.slice(0, 10) <= end) activity.push(row); };
   if (branchFilter === 'all' || branchFilter === 'main') {
     sales.forEach(s => addActivity({ id: `sale-${s.id}`, date: `${s.date} ${s.time || ''}`, type: 'Sale', title: s.invoiceNo, detail: `${s.customerName} · ${s.status} · ${s.items.map(i => `${i.productName} ×${i.quantity}`).join(', ')} · Paid ${money(s.amountPaid)} · Profit ${money(s.grossProfit - businessDeliveryCost(s))}`, amount: s.grandTotal, section: 'sales' }));
     orders.forEach(o => addActivity({ id: `order-${o.id}`, date: `${o.date} ${o.time || ''}`, type: 'Order', title: o.orderNo, detail: `${o.customerName} · ${o.status} · ${o.items.map(i => `${i.productName} ×${i.quantity}`).join(', ')} · Paid ${money(o.paidAmount)}`, amount: o.total, section: 'sales' }));
