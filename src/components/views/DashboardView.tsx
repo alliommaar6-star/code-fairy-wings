@@ -27,7 +27,7 @@ interface DashboardViewProps {
 const money = (n: number) => `$${n.toFixed(2)}`;
 
 export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate, onOpenNewSale, onOpenNewExpense, onOpenNewIncome, onOpenReceivePayment, onOpenNewDelivery, onOpenNewAccount }) => {
-  const { currentUser, getTodayStats, getPeriodStats, sales, orders, incomes, expenses, products, purchases, returns, inventoryMovements, supplierPayments, transfers, auditLogs, deliveries, cargoShipments } = useStore();
+  const { currentUser, getTodayStats, getPeriodStats, sales, orders, incomes, expenses, products, purchases, returns, inventoryMovements, supplierPayments, transfers, auditLogs, deliveries, cargoShipments, accounts } = useStore();
   const { todayNetProfit, todayTarget, targetProgressPct } = getTodayStats();
   const targetDifference = todayNetProfit - todayTarget;
   const targetStatus = targetDifference > 0 ? 'DHEERI' : targetDifference < 0 ? 'DHIMAN' : 'LA GAARAY';
