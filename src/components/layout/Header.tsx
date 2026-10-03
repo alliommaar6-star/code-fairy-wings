@@ -18,6 +18,7 @@ import {
 import { useStore } from "../../context/StoreContext";
 import { NavSection } from "./Sidebar";
 import { PortalLauncher } from "./PortalLauncher";
+import { Button } from "@/components/ui/button";
 
 interface HeaderProps {
   onToggleSidebar?: () => void;
@@ -53,6 +54,9 @@ export const Header: React.FC<HeaderProps> = ({
   const notifRef = useRef<HTMLDivElement>(null);
 
   const { todayNetProfit, todayTarget } = getTodayStats();
+  const targetDifference = todayNetProfit - todayTarget;
+  const targetStatus = targetDifference > 0 ? "DHEERI" : targetDifference < 0 ? "DHIMAN" : "LA GAARAY";
+  const targetAmount = `${targetDifference > 0 ? "+" : targetDifference < 0 ? "-" : ""}$${Math.abs(targetDifference).toFixed(2)}`;
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -105,18 +109,19 @@ export const Header: React.FC<HeaderProps> = ({
       {/* Right side: Today Target, Quick Add, Notifications, Profile */}
       <div className="flex items-center gap-2 sm:gap-3">
         <SyncBadge />
-        {/* Today Target Badge (Red pill like in screenshot) */}
-        <button
+        {/* Today's target follows the same net-profit difference as the dashboard. */}
+        <Button
           id="btn-today-target-header"
+           variant="default"
           onClick={() => onNavigate("targets")}
-          className="flex h-9 min-w-0 items-center gap-1.5 rounded bg-primary px-2 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90 sm:px-3"
-          title="View Target Command Center"
+           className="flex h-9 min-w-0 items-center gap-1.5 px-2 text-xs font-semibold sm:px-3"
+           title={`Today's target · ${targetStatus} ${targetAmount} · Target $${todayTarget.toFixed(2)} · Net profit $${todayNetProfit.toFixed(2)}`}
         >
-          <Target className="w-3.5 h-3.5 animate-pulse" />
-          <span className="hidden md:inline font-bold text-[11px] uppercase">Today target</span>
-          <span className={`text-[11px] font-bold ${todayNetProfit > todayTarget ? 'text-positive' : todayNetProfit < todayTarget ? 'text-destructive' : 'text-primary-foreground'}`}>{todayNetProfit > todayTarget ? '+' : todayNetProfit < todayTarget ? '-' : ''}${Math.abs(todayNetProfit - todayTarget).toFixed(2)}</span>
-          <span className="hidden xl:inline text-[11px] font-medium opacity-75">target ${todayTarget.toFixed(2)} · profit ${todayNetProfit.toFixed(2)}</span>
-        </button>
+           <Target className="h-3.5 w-3.5" />
+           <span className="hidden md:inline text-[11px] font-bold uppercase">Today target · {targetStatus}</span>
+           <span className={`text-[11px] font-bold ${targetDifference > 0 ? "text-positive" : targetDifference < 0 ? "text-destructive" : "text-primary-foreground"}`}>{targetAmount}</span>
+           <span className="hidden 2xl:inline text-[11px] font-medium opacity-75">target ${todayTarget.toFixed(2)} · net profit ${todayNetProfit.toFixed(2)}</span>
+         </Button>
 
         {/* Quick Add Dropdown */}
         <div className="relative" ref={quickAddRef}>

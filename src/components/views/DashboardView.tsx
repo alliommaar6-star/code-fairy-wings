@@ -29,6 +29,9 @@ const money = (n: number) => `$${n.toFixed(2)}`;
 export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate, onOpenNewSale, onOpenNewExpense, onOpenNewIncome, onOpenReceivePayment, onOpenNewDelivery, onOpenNewAccount }) => {
   const { currentUser, getTodayStats, getPeriodStats, sales, orders, incomes, expenses, products, purchases, returns, inventoryMovements, supplierPayments, transfers, auditLogs, deliveries, cargoShipments } = useStore();
   const { todayNetProfit, todayTarget, targetProgressPct } = getTodayStats();
+  const targetDifference = todayNetProfit - todayTarget;
+  const targetStatus = targetDifference > 0 ? 'DHEERI' : targetDifference < 0 ? 'DHIMAN' : 'LA GAARAY';
+  const targetAmount = `${targetDifference > 0 ? '+' : targetDifference < 0 ? '-' : ''}${money(Math.abs(targetDifference))}`;
   const { totalRemainingDebt, totalCashInHand, totalStockValueSelling } = getPeriodStats();
   const branches = useBranches();
   const role = useStaffRole();
@@ -303,8 +306,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate, onOpen
             </label>
           </div>
           <Button id="kpi-today-target" variant="ghost" onClick={() => onNavigate('targets')} className="dashboard-feature dashboard-feature-target group flex h-auto min-h-[228px] flex-col items-start justify-between whitespace-normal border border-border p-5 text-left hover:bg-accent sm:p-6">
-            <div className="flex w-full items-center justify-between"><span className="dashboard-kicker text-muted-foreground">TODAY'S TARGET · {todayNetProfit > todayTarget ? 'DHEERI' : todayNetProfit < todayTarget ? 'DHIMAN' : 'LA GAARAY'}</span><Target className="h-5 w-5 text-[var(--dash-clay)]" /></div>
-            <div className="w-full"><div className={`dashboard-heading break-all text-3xl font-bold sm:text-4xl ${todayNetProfit > todayTarget ? 'text-positive' : todayNetProfit < todayTarget ? 'text-destructive' : 'text-foreground'}`}>{todayNetProfit > todayTarget ? '+' : todayNetProfit < todayTarget ? '-' : ''}{money(Math.abs(todayNetProfit - todayTarget))}</div><p className="mt-2 text-xs font-medium text-muted-foreground">Target {money(todayTarget)} − Net profit {money(todayNetProfit)}</p><div className="mt-3 h-1 w-full bg-muted"><div className="h-full bg-[var(--dash-forest)] transition-[width] duration-500" style={{ width: `${targetProgressPct}%` }} /></div></div>
+            <div className="flex w-full items-center justify-between"><span className="dashboard-kicker text-muted-foreground">TODAY'S TARGET · {targetStatus}</span><Target className="h-5 w-5 text-[var(--dash-clay)]" /></div>
+            <div className="w-full"><div className={`dashboard-heading break-all text-3xl font-bold sm:text-4xl ${targetDifference > 0 ? 'text-positive' : targetDifference < 0 ? 'text-destructive' : 'text-foreground'}`}>{targetAmount}</div><p className="mt-2 text-xs font-medium text-muted-foreground">Target {money(todayTarget)} · Net profit {money(todayNetProfit)}</p><div className="mt-3 h-1 w-full bg-muted"><div className="h-full bg-[var(--dash-forest)] transition-[width] duration-500" style={{ width: `${targetProgressPct}%` }} /></div></div>
           </Button>
           <div className="dashboard-feature dashboard-feature-summary flex min-h-[172px] flex-col justify-between border border-border p-5 sm:p-6"><span className="dashboard-kicker text-muted-foreground">SELECTED PERIOD</span><div className="space-y-2 text-sm"><div className="flex items-center justify-between border-b border-border pb-2"><span className="text-muted-foreground">Sales</span><strong className="font-semibold text-foreground">{money(period.sales)}</strong></div><div className="flex items-center justify-between border-b border-border pb-2"><span className="text-muted-foreground">Gross profit</span><strong className="font-semibold text-foreground">{money(period.gross)}</strong></div><div className="flex items-center justify-between"><span className="text-muted-foreground">Expenses</span><strong className="font-semibold text-[var(--dash-clay)]">{money(period.expenses)}</strong></div></div></div>
         </section>
