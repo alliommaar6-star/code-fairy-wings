@@ -310,21 +310,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate, onOpen
           ); })}</div>
         </section>
 
-        <section aria-label="Targets" className="grid grid-cols-1 gap-2 md:grid-cols-3">
-          {tgtRows.map(r => { const remaining = Math.max(0, r.target - r.net); const extra = Math.max(0, r.net - r.target); const isDaily = r.label === 'Daily'; return (
-            <div key={r.label} id={`kpi-target-${r.label.toLowerCase()}`} onClick={() => onNavigate('targets')} className={`cursor-pointer border border-border bg-card p-3.5 transition-colors hover:bg-accent ${isDaily ? 'border-primary p-5' : ''}`}>
-              <div className="flex items-center justify-between"><span className="dashboard-kicker text-muted-foreground">{isDaily ? 'Today' : r.label} target</span><Target className="h-4 w-4 text-[var(--dash-clay)]" /></div>
-              {isDaily && <strong className={`mt-2 block text-3xl font-bold sm:text-4xl ${extra > 0 ? 'text-positive' : remaining > 0 ? 'text-destructive' : 'text-foreground'}`}>{extra > 0 ? '+' : remaining > 0 ? '-' : ''}{money(extra > 0 ? extra : remaining)}</strong>}
-              <div className="mt-2 space-y-1 text-xs">
-                <div className="flex justify-between"><span className="text-muted-foreground">Target</span><strong className="text-foreground">{money(r.target)}</strong></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Net profit</span><strong className="text-foreground">{money(r.net)}</strong></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Remaining</span><strong className="text-destructive">{money(remaining)}</strong></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Dheeri (extra)</span><strong className="text-primary">{money(extra)}</strong></div>
-              </div>
-            </div>
-          ); })}
-        </section>
-
         <section aria-label="Daily performance" className="grid gap-3 lg:grid-cols-[1.35fr_1fr]">
           <div id="kpi-today-net-profit" className="dashboard-feature dashboard-feature-profit flex min-h-[228px] flex-col justify-between p-5 sm:p-6">
             <div className="flex items-center justify-between"><span className="dashboard-kicker text-primary-foreground/70">NET PROFIT / TODAY</span><ArrowUpRight className="h-5 w-5 text-primary-foreground/70" /></div>
@@ -340,6 +325,21 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate, onOpen
             </label>
           </div>
           <div className="dashboard-feature dashboard-feature-summary flex min-h-[172px] flex-col justify-between border border-border p-5 sm:p-6"><span className="dashboard-kicker text-muted-foreground">SELECTED PERIOD</span><div className="space-y-2 text-sm"><div className="flex items-center justify-between border-b border-border pb-2"><span className="text-muted-foreground">Sales</span><strong className="font-semibold text-foreground">{money(period.sales)}</strong></div><div className="flex items-center justify-between border-b border-border pb-2"><span className="text-muted-foreground">Gross profit</span><strong className="font-semibold text-foreground">{money(period.gross)}</strong></div><div className="flex items-center justify-between"><span className="text-muted-foreground">Expenses</span><strong className="font-semibold text-[var(--dash-clay)]">{money(period.expenses)}</strong></div></div></div>
+        </section>
+
+        <section aria-label="Targets" className="grid grid-cols-1 gap-2 md:grid-cols-3">
+          {tgtRows.map(r => { const remaining = Math.max(0, r.target - r.net); const extra = Math.max(0, r.net - r.target); const isDaily = r.label === 'Daily'; return (
+            <div key={r.label} id={`kpi-target-${r.label.toLowerCase()}`} onClick={() => onNavigate('targets')} className={`cursor-pointer border border-border bg-card p-3.5 transition-colors hover:bg-accent ${isDaily ? 'border-primary p-5' : ''}`}>
+              <div className="flex items-center justify-between"><span className="dashboard-kicker text-muted-foreground">{isDaily ? 'Today' : r.label} target</span><Target className="h-4 w-4 text-[var(--dash-clay)]" /></div>
+              {isDaily && <strong className={`mt-2 block text-3xl font-bold sm:text-4xl ${extra > 0 ? 'text-positive' : remaining > 0 ? 'text-destructive' : 'text-foreground'}`}>{extra > 0 ? '+' : remaining > 0 ? '-' : ''}{money(extra > 0 ? extra : remaining)}</strong>}
+              <div className="mt-2 space-y-1 text-xs">
+                <div className="flex justify-between"><span className="text-muted-foreground">Target</span><strong className="text-foreground">{money(r.target)}</strong></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Net profit</span><strong className="text-foreground">{money(r.net)}</strong></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Remaining</span><strong className="text-destructive">{money(remaining)}</strong></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Dheeri (extra)</span><strong className="text-primary">{money(extra)}</strong></div>
+              </div>
+            </div>
+          ); })}
         </section>
 
         <section aria-label="Today month year" className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-5">
