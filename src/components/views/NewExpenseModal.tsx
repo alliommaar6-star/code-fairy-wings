@@ -10,7 +10,9 @@ interface NewExpenseModalProps {
 }
 
 export const NewExpenseModal: React.FC<NewExpenseModalProps> = ({ isOpen, onClose }) => {
-  const { accounts, addAccount, addExpense, currentUser } = useStore();
+  const { accounts, addAccount, addExpense, currentUser, products } = useStore();
+  const [adProductId, setAdProductId] = useState<string>("");
+  const isAds = category === "Facebook Ads";
 
   const [isPettyCash, setIsPettyCash] = useState<boolean>(true);
   const [category, setCategory] = useState<string>("Transportation");
@@ -65,6 +67,12 @@ export const NewExpenseModal: React.FC<NewExpenseModalProps> = ({ isOpen, onClos
       return;
     }
 
+    const adProduct = isAds ? products.find((p) => p.id === adProductId) : undefined;
+    if (isAds && !adProduct) {
+      alert("Fadlan dooro product-ka xayeysiinta Facebook loo sameeyay.");
+      return;
+    }
+
     const acc = selectedAccount;
     if (!acc) {
       alert("Fadlan dooro account-ka lacagta laga bixiyay (tusaale: EVC Plus, Cash).");
@@ -73,6 +81,9 @@ export const NewExpenseModal: React.FC<NewExpenseModalProps> = ({ isOpen, onClos
 
     // Build definitive title
     let definitiveTitle = title.trim();
+    if (!definitiveTitle && adProduct) {
+      definitiveTitle = `Facebook Ads — ${adProduct.name}`;
+    }
     if (!definitiveTitle) {
       if (category === "Other" && customExpenseName.trim()) {
         definitiveTitle = customExpenseName.trim();
@@ -87,6 +98,8 @@ export const NewExpenseModal: React.FC<NewExpenseModalProps> = ({ isOpen, onClos
       isPettyCash,
       pettyCashCategory: isPettyCash ? category : undefined,
       customExpenseName: category === "Other" ? customExpenseName.trim() : undefined,
+      adProductId: adProduct?.id,
+      adProductName: adProduct?.name,
       amount: parsedAmount,
       date,
       paidFromAccountId: acc.id,
@@ -100,6 +113,7 @@ export const NewExpenseModal: React.FC<NewExpenseModalProps> = ({ isOpen, onClos
     setCustomExpenseName("");
     setAmount("");
     setNotes("");
+    setAdProductId("");
   };
 
   const parsedAmountNum = parseFloat(amount) || 0;
@@ -302,6 +316,7 @@ export const NewExpenseModal: React.FC<NewExpenseModalProps> = ({ isOpen, onClos
                   <option value="Utilities">Utilities & Power (Koronto & Biyo)</option>
                   <option value="Logistics">Logistics & Fuel (Gaadiid & Shidaal)</option>
                   <option value="Marketing">Marketing (Xayeysiin)</option>
+                  <option value="Facebook Ads">Facebook Ads (by Product)</option>
                   <option value="Maintenance">Maintenance (Dayactir guud)</option>
                   <option value="Supplies">Supplies (Qalabka Dukaanka)</option>
                   <option value="Other">Other Expenses (Kharashyo kale...)</option>
@@ -329,6 +344,28 @@ export const NewExpenseModal: React.FC<NewExpenseModalProps> = ({ isOpen, onClos
             </div>
           </div>
         </div>
+
+        {isAds && (
+          <div className="bg-sky-50/70 border border-sky-200 rounded-xl p-3">
+            <label className="block text-xs font-black uppercase tracking-wider text-sky-900 mb-1">
+              Product-ka Xayeysiinta (Facebook Ads Product) *
+            </label>
+            <select
+              required
+              value={adProductId}
+              onChange={(e) => setAdProductId(e.target.value)}
+              className="w-full px-3 py-2 bg-white border border-sky-300 rounded-xl text-xs font-bold text-slate-900"
+            >
+              <option value="">— Dooro product —</option>
+              {products.map((p) => (
+                <option key={p.id} value={p.id}>{p.name}</option>
+              ))}
+            </select>
+            <p className="text-[11px] text-sky-800 mt-1">
+              Kharashka ads-ka waxaa si gooni ah loogu xisaabin doonaa product-kan.
+            </p>
+          </div>
+        )}
 
         {/* If category is Other: Add Name Field */}
         {category === "Other" && (

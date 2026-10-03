@@ -323,6 +323,9 @@ export interface Expense {
   isPettyCash?: boolean;
   pettyCashCategory?: string;
   customExpenseName?: string;
+  /** Facebook Ads expense tied to one product */
+  adProductId?: string;
+  adProductName?: string;
   amount: number;
   date: string;
   paidFromAccountId: string;
