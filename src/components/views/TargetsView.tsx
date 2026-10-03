@@ -74,7 +74,7 @@ export const TargetsView: React.FC = () => {
 
       <div className="grid grid-cols-1 gap-3 border border-border bg-card p-5 sm:p-6">
         <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground"><Target className="h-5 w-5" /> Today's Target</div>
-        <strong className={`text-4xl font-bold sm:text-5xl ${extraToday > 0 || (t && remainingToday === 0) ? 'text-positive' : 'text-destructive'}`}>{extraToday > 0 || (t && remainingToday === 0) ? '+' : '-'}{money(extraToday > 0 ? extraToday : remainingToday)}</strong>
+        <strong className={`text-4xl font-bold sm:text-5xl ${extraToday > 0 ? 'text-positive' : remainingToday > 0 ? 'text-destructive' : 'text-foreground'}`}>{extraToday > 0 ? '+' : remainingToday > 0 ? '-' : ''}{money(extraToday > 0 ? extraToday : remainingToday)}</strong>
         <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-foreground"><span>Target: {money(t?.adjustedTarget ?? 0)}</span><span>Net profit: {money(t?.achievement ?? 0)}</span><span>Remaining: {money(remainingToday)}</span><span>Dheeri: {money(extraToday)}</span></div>
       </div>
 

@@ -2788,9 +2788,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setTransfers([]);
     setCustomers([]);
     setDrivers([]);
-    setCategories(DEFAULT_CATEGORIES);
-    setBrands(DEFAULT_BRANDS);
-    setUnits(DEFAULT_UNITS);
+    setCategories([]);
+    setBrands([]);
+    setUnits([]);
     setAuditLogs([]);
 
     // 2. Clear localStorage keys
@@ -2826,9 +2826,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     localStorage.setItem("benadir_delivery_v1", JSON.stringify({ companies: [], locations: [], drivers: [] }));
     localStorage.setItem("benadir_payment_accounts_v1", JSON.stringify({ wallet: [], merchant: [], bank: [] }));
     localStorage.setItem("benadir_finengine_v1", JSON.stringify({ config: { systemStartDate: new Date().toISOString().slice(0, 10), monthlyBaseTarget: 93.5, rentAmount: 250, rentStartDate: "2027-02-01" }, fundTransfers: [], reconciliations: [], audit: [] }));
-    localStorage.setItem("benadir_categories", JSON.stringify(DEFAULT_CATEGORIES));
-    localStorage.setItem("benadir_brands", JSON.stringify(DEFAULT_BRANDS));
-    localStorage.setItem("benadir_units", JSON.stringify(DEFAULT_UNITS));
+    localStorage.setItem("benadir_categories", "[]");
+    localStorage.setItem("benadir_brands", "[]");
+    localStorage.setItem("benadir_units", "[]");
     localStorage.setItem("benadir_opening_complete_v1", "false");
     window.dispatchEvent(new CustomEvent("benadir-remote-update"));
 
