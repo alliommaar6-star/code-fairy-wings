@@ -20,3 +20,4 @@
 - [x] Build Petty Cash Fund page: record cash paid out, cash in, and box balance
 - [x] Build EVC Plus reconciliation page: compare system records vs EVC balance
 - [x] SalesOrdersView: add "Sale from Branches" tab next to Order/Sale — branch dropdown, same layout as direct sale, fixed $2 commission per item sold (charged to branch manager)
+- [ ] Connect GitHub API in new workspace (user re-requested after workspace move)
