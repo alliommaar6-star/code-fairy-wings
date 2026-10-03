@@ -71,6 +71,7 @@ export const SalesOrdersView: React.FC<SalesOrdersViewProps> = ({
 
   // Modals
   const [isNewOrderOpen, setIsNewOrderOpen] = useState(false);
+  const [isBranchSaleOpen, setIsBranchSaleOpen] = useState(false);
   const [newMode, setNewMode] = useState<"sale" | "order">("sale");
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [adminDetailOrder, setAdminDetailOrder] = useState<Order | null>(null);
