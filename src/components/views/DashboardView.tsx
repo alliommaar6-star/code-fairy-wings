@@ -33,7 +33,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate, onOpen
   const branches = useBranches();
   const role = useStaffRole();
   const [range, setRange] = useState<DateRange>(() => ({ from: new Date(), to: new Date() }));
-  const [comparisonDays, setComparisonDays] = useState(16);
+  const [comparisonDays, setComparisonDays] = useState(1);
   const [activityQuery, setActivityQuery] = useState('');
   const [activityType, setActivityType] = useState('all');
   const [activityLimit, setActivityLimit] = useState(25);
@@ -67,10 +67,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate, onOpen
     };
     const showMain = branchFilter === 'all' || branchFilter === 'main';
     if (showMain) {
-      sales.filter(s => s.status === 'Completed').forEach(s => { add(s.date, 'sales', s.grandTotal); add(s.date, 'gross', s.grossProfit - businessDeliveryCost(s)); });
+      sales.filter(s => s.status === 'Completed').forEach(s => { add(s.date, 'sales', s.grandTotal); add(s.date, 'gross', s.grossProfit); add(s.date, 'expenses', businessDeliveryCost(s)); });
       orders.filter(o => o.status === 'delivered' && !o.convertedSaleId).forEach(o => {
         add(o.date, 'sales', o.total);
-        add(o.date, 'gross', o.total - o.items.reduce((sum, item) => sum + (item.costPrice || 0) * item.quantity, 0) - businessDeliveryCost(o));
+        add(o.date, 'gross', o.total - o.items.reduce((sum, item) => sum + (item.costPrice || 0) * item.quantity, 0));
+        add(o.date, 'expenses', businessDeliveryCost(o));
       });
     }
     branches.sales.filter(s => branchFilter === 'all' || s.branchId === branchFilter).forEach(s => { add(s.date, 'sales', s.total); add(s.date, 'gross', s.total - s.cost - s.commission); });
@@ -84,6 +85,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate, onOpen
   const current = compute(start, end);
   const compared = compute(comparisonStart, comparisonEnd);
   const previous = compute(prevStart, prevEnd);
+  const comparisonNow = comparisonDays === 1 ? compute(comparisonEnd, comparisonEnd) : compared;
+  const comparisonBefore = comparisonDays === 1 ? compute(prevEnd, prevEnd) : previous;
   const byDay = current.map;
   const performanceData = eachDayOfInterval({ start: parseISO(start), end: parseISO(end) }).map(d => {
     const key = format(d, 'yyyy-MM-dd');
@@ -98,10 +101,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate, onOpen
   const prevLabel = fmtLabel(prevStart, prevEnd);
   const branchName = branchFilter === 'all' ? 'All (store + branches)' : branchFilter === 'main' ? 'Main store' : branches.branches.find(b => b.id === branchFilter)?.name ?? 'Branch';
   const comparison = [
-    { label: 'Sales', now: compared.total.sales, before: previous.total.sales },
-    { label: 'Gross profit', now: compared.total.gross, before: previous.total.gross },
-    { label: 'Expenses', now: compared.total.expenses, before: previous.total.expenses, inverse: true },
-    { label: 'Net profit', now: compared.net, before: previous.net },
+    { label: 'Sales', now: comparisonNow.total.sales, before: comparisonBefore.total.sales },
+    { label: 'Gross profit', now: comparisonNow.total.gross, before: comparisonBefore.total.gross },
+    { label: 'Expenses', now: comparisonNow.total.expenses, before: comparisonBefore.total.expenses, inverse: true },
+    { label: 'Net profit', now: comparisonNow.net, before: comparisonBefore.net },
   ];
   const pct = (now: number, before: number) => before === 0 ? (now === 0 ? 0 : null) : ((now - before) / Math.abs(before)) * 100;
   const branchRows = [
