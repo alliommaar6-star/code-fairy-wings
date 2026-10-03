@@ -234,7 +234,7 @@ export const BranchSalesPanel: React.FC = () => {
           <div className="bg-white rounded-xl border border-slate-200 overflow-x-auto">
             <table className="w-full text-xs">
               <thead className="bg-slate-100 text-slate-600 uppercase text-[11px]"><tr>
-                <th className="py-2 px-3 text-left">Taariikh</th><th className="px-3 text-left">Alaab</th>
+                <th className="py-2 px-3 text-left">Taariikh</th><th className="px-3 text-left">Masuul</th><th className="px-3 text-left">Alaab</th>
                 <th className="px-3 text-right">Wadarta</th><th className="px-3 text-right">Commission</th><th className="px-3 text-right">Faa'iido</th></tr></thead>
               <tbody>
                 {branchSales.length === 0 ? (
@@ -242,6 +242,7 @@ export const BranchSalesPanel: React.FC = () => {
                 ) : branchSales.map((s) => (
                   <tr key={s.id} className="border-t border-slate-100">
                     <td className="py-2 px-3">{s.date} <span className="text-slate-400">{s.time}</span></td>
+                    <td className="px-3 text-slate-600">{s.managerName || branch.manager || "—"}</td>
                     <td className="px-3">{s.items.map((i) => `${i.productName} (${i.quantity})`).join(", ")}</td>
                     <td className="px-3 text-right font-mono font-bold">${s.total.toFixed(2)}</td>
                     <td className="px-3 text-right font-mono text-amber-700">${s.commission.toFixed(2)}</td>

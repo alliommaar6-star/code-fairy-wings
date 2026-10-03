@@ -13,6 +13,7 @@ export type BranchSale = {
   id: string;
   branchId: string;
   branchName: string;
+  managerName?: string;
   date: string; // YYYY-MM-DD
   time: string;
   items: BranchSaleItem[];
@@ -131,6 +132,7 @@ export function recordBranchSale(branchId: string, items: BranchSaleItem[], note
     id: uid("BS"),
     branchId,
     branchName: br.name,
+    managerName: br.manager || undefined,
     date: todayISO(),
     time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
     items,
