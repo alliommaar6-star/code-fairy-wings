@@ -256,8 +256,8 @@ export const SettingsView: React.FC = () => {
           </p>
           <ul className="list-disc pl-4 space-y-1 text-slate-500">
             <li>
-              <strong className="text-slate-700">Deletes:</strong> All sample products, orders,
-              sales, customer debt records, inventory movements, purchases, and expenses.
+              <strong className="text-slate-700">Clears:</strong> Products, orders, sales,
+              customer debt, branch stock, account balances, purchases, and expenses.
             </li>
             <li>
               <strong className="text-slate-700">Preserves:</strong> Staff access and store settings;
@@ -344,7 +344,7 @@ export const SettingsView: React.FC = () => {
               {!isOwner ? (
                 <div className="p-4 rounded-xl bg-rose-100/70 border border-rose-300 text-rose-900 text-xs font-semibold">
                   Access Blocked: Your current user session role is{" "}
-                  <strong>{currentUser.role}</strong>. Only users with the <strong>Owner</strong>{" "}
+                  <strong>{isOwner ? "Owner" : "staff"}</strong>. Only users with the <strong>Owner</strong>{" "}
                   role can perform a factory reset.
                 </div>
               ) : (

@@ -32,3 +32,4 @@
 - Branch sale commission is a fixed amount PER ITEM sold (default $2), charged to the branch manager: `recordBranchSale` multiplies branch.commission by total quantity. Why: user rule — $2 per item.
 - Petty Cash Fund and EVC Reconciliation are engine-backed views (PettyCashView, EvcReconciliationView) storing fund transfers and reconciliations in benadir_finengine_v1; differences are recorded, never silently fixed. Why: auditability.
 - Opening balances are stored as payment accounts; a reset preserves a backup while clearing synced business stores and triggers first-use setup. Why: opening cash must enter the accounting ledger without invented transactions or stale branch data.
+- Dashboard balance reveal checks a server-held PIN through an authenticated staff function, while the display stays masked on initial load. Why: a client-side PIN check could be bypassed by changing browser storage.

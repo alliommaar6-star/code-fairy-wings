@@ -24,8 +24,8 @@
 - [x] Stock "hadiyad" (qof baa isiiyay, cost $0): option marka stock lagu daro main store (RestockProductModal) iyo branch transfer (BranchSalesPanel) — kharash/expense lama diiwaan gelinayo
 - [x] Tijaabada browser: Branch Admin field waa la xaqiijiyay (offline owner mode)
 - [x] Dashboard: business activity detail, daily/monthly/yearly/all-time net profit, signed target difference, 16-day comparison, Today default
-- [ ] Unify header/dashboard target difference; export dashboard KPIs and filtered activity CSV; searchable date/type-filtered activity details
-- [ ] Owner-confirmed complete business reset with backup and clean first-use opening balances for Cash/Bank/EVC/e-Dahab
-- [ ] Centered hidden balance display, PIN-revealed only for current view
-- [ ] Dashboard: count business-paid delivery costs as expenses without double-deducting net profit; emphasize Today target over weekly/monthly; comparison defaults to daily Today vs yesterday
-- [ ] Dashboard activity: search, date and event-type filters with full detail view (repeated request)
+- [x] Unify header/dashboard target difference; export dashboard KPIs and filtered activity CSV; searchable date/type-filtered activity details
+- [x] Owner-confirmed business reset with backup and clean first-use opening balances for Cash/Bank/EVC/e-Dahab (reset not executed on existing data)
+- [x] Centered hidden balance display, PIN-revealed only for current view (authenticated reveal awaits live sign-in verification)
+- [x] Dashboard: count business-paid delivery costs as expenses without double-deducting net profit; emphasize Today target over weekly/monthly; comparison defaults to daily Today vs yesterday
+- [x] Dashboard activity: search, date and event-type filters with full detail view (repeated request)
