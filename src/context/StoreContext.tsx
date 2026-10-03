@@ -1,3 +1,5 @@
+import { calcPurchase, withLandedUnitCosts } from "@/lib/purchase-calc";
+import type { PurchaseStage } from "@/types";
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { useStaffRole } from "@/lib/roles";
 import { branchTotalsFor } from "../lib/branch-store";
@@ -192,6 +194,7 @@ interface StoreContextType {
   getSupplierStatement: (supplierId: string) => SupplierStatementEntry[];
   createPurchase: (purchase: Omit<Purchase, "id" | "purchaseNo" | "createdAt">) => Purchase;
   cancelPurchase: (purchaseId: string, reason?: string) => { success: boolean; message: string };
+  setPurchaseStage: (purchaseId: string, stage: PurchaseStage, note?: string) => void;
   addPurchase: (
     purchase: Omit<Purchase, "id"> | Omit<Purchase, "id" | "purchaseNo" | "createdAt">,
   ) => void;
@@ -3854,82 +3857,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   // Purchase Engine - Database-authoritative sequential ID, atomic stock, cost layer, supplier & accounts integration
-  const createPurchase = (
-    purchaseData: Omit<Purchase, "id" | "purchaseNo" | "createdAt"> & { purchaseNo?: string },
-  ): Purchase => {
-    // Auto-generated, editable Purchase ID: PO-00001, PO-00002...
-    let purchaseNo = purchaseData.purchaseNo?.trim()
-      ? uniqueCode(
-          purchaseData.purchaseNo,
-          purchases.map((p) => p.purchaseNo),
-        )
-      : nextCode(
-          "PO",
-          purchases.map((p) => p.purchaseNo),
-        );
-
+  const applyPurchaseReceipt = (newPurchase: Purchase) => {
     const now = new Date().toISOString();
-    const dateOnly = purchaseData.date || now.split("T")[0];
-    const timeOnly =
-      purchaseData.time ||
-      new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-    const id = `pu-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`;
+    const dateOnly = newPurchase.receivedDate || now.split("T")[0];
+    const purchaseNo = newPurchase.purchaseNo;
 
-    const subtotal = purchaseData.subtotal ?? purchaseData.items.reduce((s, it) => s + it.total, 0);
-    const discount = purchaseData.discount || 0;
-    const totalAmount = purchaseData.totalAmount ?? Math.max(0, subtotal - discount);
-    const paidAmount = purchaseData.paidAmount || 0;
-    const supplierBalance = Math.max(0, totalAmount - paidAmount);
-
-    let paymentStatus: Purchase["paymentStatus"] = purchaseData.paymentStatus;
-    if (!paymentStatus) {
-      if (paidAmount >= totalAmount && totalAmount > 0) {
-        paymentStatus = "full_paid";
-      } else if (paidAmount > 0) {
-        paymentStatus = "partial_payment";
-      } else {
-        paymentStatus = "credit";
-      }
-    }
-
-    const initialAudit: PurchaseAuditEvent[] = [
-      {
-        id: `aud-${Date.now()}-1`,
-        timestamp: now,
-        actor: currentUser.name || "Admin",
-        action: "CREATED",
-        details: `Purchase Order ${purchaseNo} created with ${purchaseData.items.length} items. Total: $${totalAmount.toFixed(2)}, Paid: $${paidAmount.toFixed(2)}, Balance Due: $${supplierBalance.toFixed(2)}`,
-      },
-    ];
-
-    const newPurchase: Purchase = {
-      ...purchaseData,
-      id,
-      purchaseNo,
-      date: dateOnly,
-      time: timeOnly,
-      subtotal,
-      discount,
-      totalAmount,
-      paidAmount,
-      supplierBalance,
-      paymentStatus,
-      paymentProvider:
-        purchaseData.paymentProvider ||
-        (paidAmount > 0 ? purchaseData.accountName || purchaseData.paymentMethod : undefined),
-      referenceNo: purchaseData.referenceNo || purchaseNo,
-      attachments: purchaseData.attachments || [],
-      history: initialAudit,
-      status: purchaseData.status || "Received",
-      actor: currentUser.name || "Admin",
-      createdAt: now,
-      updatedAt: now,
-    };
-
-    setPurchases((prev) => [newPurchase, ...prev]);
-
-    // 2. Atomic restock & cost layers on each product if status is 'Received'
-    if (newPurchase.status === "Received") {
       setProducts((prev) =>
         prev.map((prod) => {
           const item = newPurchase.items.find((it) => it.productId === prod.id);
@@ -3938,7 +3870,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           const oldStock = prod.stock;
           const newStock = oldStock + item.quantity;
           const oldCost = prod.costPrice;
-          const newCost = item.costPrice;
+          const newCost = item.landedUnitCost ?? item.costPrice;
           const newSelling =
             item.sellingPrice && item.sellingPrice > 0 ? item.sellingPrice : prod.sellingPrice;
 
@@ -4011,7 +3943,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           type: "purchase",
           quantityChange: item.quantity,
           stockAfter,
-          costPrice: item.costPrice,
+          costPrice: item.landedUnitCost ?? item.costPrice,
           sellingPrice: item.sellingPrice || prod?.sellingPrice || 0,
           unit: item.unit || prod?.unit || "PCS",
           referenceNo: purchaseNo,
@@ -4020,6 +3952,150 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         };
       });
       setInventoryMovements((prev) => [...purchaseMovements, ...prev]);
+    
+  };
+
+  const setPurchaseStage = (purchaseId: string, stage: PurchaseStage, note?: string) => {
+    const p = purchases.find((x) => x.id === purchaseId);
+    if (!p || p.status === "Cancelled" || p.stage === "Received" || p.status === "Received") return;
+    const now = new Date().toISOString();
+    const today = now.split("T")[0];
+    const actor = currentUser.name || "Admin";
+    const updated: Purchase = {
+      ...p,
+      stage,
+      status: stage === "Received" ? "Received" : p.status,
+      receivedDate: stage === "Received" ? today : p.receivedDate,
+      receivedBy: stage === "Received" ? actor : p.receivedBy,
+      cargo: p.cargo
+        ? {
+            ...p.cargo,
+            shippedDate: stage === "Shipped" ? p.cargo.shippedDate || today : p.cargo.shippedDate,
+            arrivedDate: stage === "Arrived" ? p.cargo.arrivedDate || today : p.cargo.arrivedDate,
+          }
+        : p.cargo,
+      stageHistory: [...(p.stageHistory || []), { stage, at: now, actor, note }],
+      updatedAt: now,
+    };
+    setPurchases((prev) => prev.map((x) => (x.id === purchaseId ? updated : x)));
+    if (stage === "Received") applyPurchaseReceipt(updated);
+  };
+
+  const createPurchase = (
+    purchaseData: Omit<Purchase, "id" | "purchaseNo" | "createdAt"> & { purchaseNo?: string },
+  ): Purchase => {
+    // Auto-generated, editable Purchase ID: PO-00001, PO-00002...
+    let purchaseNo = purchaseData.purchaseNo?.trim()
+      ? uniqueCode(
+          purchaseData.purchaseNo,
+          purchases.map((p) => p.purchaseNo),
+        )
+      : nextCode(
+          "PO",
+          purchases.map((p) => p.purchaseNo),
+        );
+
+    const now = new Date().toISOString();
+    const dateOnly = purchaseData.date || now.split("T")[0];
+    const timeOnly =
+      purchaseData.time ||
+      new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    const id = `pu-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`;
+
+    const purchaseType = purchaseData.purchaseType || "LOCAL";
+    const landedItems = withLandedUnitCosts({ ...purchaseData, purchaseType });
+    const calc = calcPurchase({ ...purchaseData, purchaseType });
+    const subtotal = purchaseData.subtotal ?? purchaseData.items.reduce((s, it) => s + it.total, 0);
+    const discount = purchaseData.discount || 0;
+    const totalAmount = purchaseData.totalAmount ?? calc.supplierPayable;
+    const paidAmount = purchaseData.paidAmount || 0;
+    const supplierBalance = Math.max(0, totalAmount - paidAmount);
+
+    let paymentStatus: Purchase["paymentStatus"] = purchaseData.paymentStatus;
+    if (!paymentStatus) {
+      if (paidAmount >= totalAmount && totalAmount > 0) {
+        paymentStatus = "full_paid";
+      } else if (paidAmount > 0) {
+        paymentStatus = "partial_payment";
+      } else {
+        paymentStatus = "credit";
+      }
+    }
+
+    const initialAudit: PurchaseAuditEvent[] = [
+      {
+        id: `aud-${Date.now()}-1`,
+        timestamp: now,
+        actor: currentUser.name || "Admin",
+        action: "CREATED",
+        details: `Purchase Order ${purchaseNo} created with ${purchaseData.items.length} items. Total: $${totalAmount.toFixed(2)}, Paid: $${paidAmount.toFixed(2)}, Balance Due: $${supplierBalance.toFixed(2)}`,
+      },
+    ];
+
+    const initialStatus = purchaseData.status || "Received";
+    const stage = purchaseData.stage || (initialStatus === "Received" ? "Received" : "Ordered");
+    const newPurchase: Purchase = {
+      ...purchaseData,
+      items: landedItems,
+      purchaseType,
+      stage,
+      stageHistory: [{ stage, at: now, actor: currentUser.name || "Admin" }],
+      receivedDate: initialStatus === "Received" ? dateOnly : undefined,
+      id,
+      purchaseNo,
+      date: dateOnly,
+      time: timeOnly,
+      subtotal,
+      discount,
+      totalAmount,
+      paidAmount,
+      supplierBalance,
+      paymentStatus,
+      paymentProvider:
+        purchaseData.paymentProvider ||
+        (paidAmount > 0 ? purchaseData.accountName || purchaseData.paymentMethod : undefined),
+      referenceNo: purchaseData.referenceNo || purchaseNo,
+      attachments: purchaseData.attachments || [],
+      history: initialAudit,
+      status: purchaseData.status || "Received",
+      actor: currentUser.name || "Admin",
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    setPurchases((prev) => [newPurchase, ...prev]);
+
+    if (newPurchase.status === "Received") applyPurchaseReceipt(newPurchase);
+
+    // Operational EXPENSES (never part of product cost) → Expenses ledger
+    if (newPurchase.accountId) {
+      const acc = accounts.find((a) => a.id === newPurchase.accountId);
+      const lines: [string, number | undefined][] = [
+        ["Xamaali", newPurchase.expenses?.xamaali],
+        ["Transportation", newPurchase.expenses?.transportation],
+        [newPurchase.expenses?.otherNote || "Other", newPurchase.expenses?.other],
+      ];
+      if (purchaseType === "INTERNATIONAL") {
+        const ce = newPurchase.cargo?.expenses;
+        lines.push(["Cargo Xamaali", ce?.xamaali], ["Cargo Transportation", ce?.transportation], [ce?.otherNote || "Cargo Other", ce?.other]);
+      }
+      const exps: Expense[] = lines
+        .filter(([, a]) => (a || 0) > 0)
+        .map(([label, a], i) => ({
+          id: `exp-${Date.now()}-${i}-${Math.random().toString(36).slice(2, 5)}`,
+          title: `${label} — ${purchaseNo}`,
+          category: "Purchase Expense",
+          amount: a || 0,
+          date: dateOnly,
+          paidFromAccountId: newPurchase.accountId!,
+          paidFromAccountName: acc?.name || newPurchase.accountName || "",
+          notes: `Purchase ${purchaseNo} (${purchaseType}) operational expense`,
+        }) as Expense);
+      if (exps.length) {
+        const total = exps.reduce((s, e) => s + e.amount, 0);
+        setExpenses((prev) => [...exps, ...prev]);
+        setAccounts((prev) => prev.map((a) => (a.id === newPurchase.accountId ? { ...a, balance: a.balance - total } : a)));
+      }
     }
 
     // 4. Update supplier balance and totals
@@ -4534,6 +4610,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         getSupplierStatement,
         createPurchase,
         cancelPurchase,
+        setPurchaseStage,
         addPurchase,
         addPurchaseAttachment,
         removePurchaseAttachment,

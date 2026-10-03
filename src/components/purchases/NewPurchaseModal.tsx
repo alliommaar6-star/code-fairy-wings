@@ -19,7 +19,8 @@ import {
 } from "lucide-react";
 import { useStore } from "../../context/StoreContext";
 import { Modal } from "../common/Modal";
-import { PurchaseItem, PurchaseAttachment } from "../../types";
+import { PurchaseItem, PurchaseAttachment, PurchaseType } from "../../types";
+import { calcPurchase } from "@/lib/purchase-calc";
 
 interface NewPurchaseModalProps {
   isOpen: boolean;
@@ -79,6 +80,24 @@ export const NewPurchaseModal: React.FC<NewPurchaseModalProps> = ({
     "invoice",
   );
   const [errorMsg, setErrorMsg] = useState<string>("");
+  const [purchaseType, setPurchaseType] = useState<PurchaseType>("LOCAL");
+  const [currency, setCurrency] = useState("USD");
+  const [paymentTerms, setPaymentTerms] = useState("Cash");
+  const [alreadyReceived, setAlreadyReceived] = useState(false);
+  const [dc, setDc] = useState({ alibabaFee: "", chinaFreight: "", mastercardFee: "" });
+  const [exp, setExp] = useState({ xamaali: "", transportation: "", other: "", otherNote: "" });
+  const [cargo, setCargo] = useState({ cargoCost: "", agentName: "", agentPhone: "", trackingNo: "", cbm: "", shippingMethod: "Sea", expectedArrival: "" });
+  const [cexp, setCexp] = useState({ xamaali: "", transportation: "", other: "", otherNote: "" });
+  const isIntl = purchaseType === "INTERNATIONAL";
+  const num = (v: string) => parseFloat(v) || 0;
+  const directCosts = isIntl ? { alibabaFee: num(dc.alibabaFee), chinaFreight: num(dc.chinaFreight), mastercardFee: num(dc.mastercardFee) } : undefined;
+  const purchaseExpenses = { xamaali: num(exp.xamaali), transportation: num(exp.transportation), other: num(exp.other), otherNote: exp.otherNote.trim() || undefined };
+  const cargoData = isIntl ? {
+    cargoCost: num(cargo.cargoCost), agentName: cargo.agentName.trim() || undefined, agentPhone: cargo.agentPhone.trim() || undefined,
+    trackingNo: cargo.trackingNo.trim() || undefined, cbm: num(cargo.cbm) || undefined, shippingMethod: cargo.shippingMethod,
+    expectedArrival: cargo.expectedArrival || undefined,
+    expenses: { xamaali: num(cexp.xamaali), transportation: num(cexp.transportation), other: num(cexp.other), otherNote: cexp.otherNote.trim() || undefined },
+  } : undefined;
 
   // Calculations
   const calculatedItems: (PurchaseItem & { sellingPrice: number })[] = items.map((row) => {
@@ -99,7 +118,8 @@ export const NewPurchaseModal: React.FC<NewPurchaseModalProps> = ({
   });
 
   const subtotal = parseFloat(calculatedItems.reduce((sum, it) => sum + it.total, 0).toFixed(2));
-  const totalAmount = Math.max(0, parseFloat((subtotal - (orderDiscount || 0)).toFixed(2)));
+  const calc = calcPurchase({ purchaseType, items: calculatedItems, discount: orderDiscount, directCosts, expenses: purchaseExpenses, cargo: cargoData });
+  const totalAmount = calc.supplierPayable;
 
   let paidAmount = 0;
   if (paymentType === "full") {
@@ -262,7 +282,7 @@ export const NewPurchaseModal: React.FC<NewPurchaseModalProps> = ({
     }
 
     // 3. Payment Account validation if paying
-    if (paidAmount > 0) {
+    if (paidAmount > 0 || calc.operationalExpenses > 0) {
       if (!selectedAccount) {
         setErrorMsg("Please select a payment account for this cash outflow.");
         return;
@@ -287,11 +307,17 @@ export const NewPurchaseModal: React.FC<NewPurchaseModalProps> = ({
         paymentMethod: paidAmount > 0 ? selectedAccount?.name : "Supplier Credit",
         paymentProvider:
           paymentProvider.trim() || (paidAmount > 0 ? selectedAccount?.name : undefined),
-        accountId: paidAmount > 0 ? selectedAccount?.id : undefined,
-        accountName: paidAmount > 0 ? selectedAccount?.name : undefined,
+        accountId: paidAmount > 0 || calc.operationalExpenses > 0 ? selectedAccount?.id : undefined,
+        accountName: paidAmount > 0 || calc.operationalExpenses > 0 ? selectedAccount?.name : undefined,
+        purchaseType,
+        currency,
+        paymentTerms,
+        directCosts,
+        expenses: purchaseExpenses,
+        cargo: cargoData,
         referenceNo: referenceNo.trim() || undefined,
         attachments: attachments,
-        status: "Received",
+        status: !isIntl || alreadyReceived ? "Received" : "Ordered",
         notes: notes.trim() || undefined,
       });
 
@@ -319,6 +345,27 @@ export const NewPurchaseModal: React.FC<NewPurchaseModalProps> = ({
             <span>{errorMsg}</span>
           </div>
         )}
+
+        {/* Purchase Type */}
+        <div className="grid grid-cols-2 gap-2">
+          {(["LOCAL", "INTERNATIONAL"] as PurchaseType[]).map((t) => (
+            <button key={t} type="button" onClick={() => setPurchaseType(t)}
+              className={`rounded-xl border p-3 text-left text-xs font-bold ${purchaseType === t ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card text-foreground"}`}>
+              {t === "LOCAL" ? "Local Supplier" : "International Supplier"}
+              <div className="mt-0.5 text-[11px] font-normal opacity-80">{t === "LOCAL" ? "Hal maalin: alaab → xamaali → bakhaar" : "Alibaba/China → Cargo → Bakhaar"}</div>
+            </button>
+          ))}
+        </div>
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+          <label className="text-[11px] font-semibold text-muted-foreground">Currency
+            <select value={currency} onChange={(e) => setCurrency(e.target.value)} className="mt-1 w-full rounded-lg border border-border bg-background px-2 py-1.5 text-xs text-foreground">
+              <option>USD</option><option>SOS</option><option>CNY</option></select></label>
+          <label className="text-[11px] font-semibold text-muted-foreground">Payment Terms
+            <select value={paymentTerms} onChange={(e) => setPaymentTerms(e.target.value)} className="mt-1 w-full rounded-lg border border-border bg-background px-2 py-1.5 text-xs text-foreground">
+              <option>Cash</option><option>Partial</option><option>Credit</option><option>Advance</option></select></label>
+          {isIntl && <label className="col-span-2 flex items-center gap-2 text-[11px] font-semibold text-muted-foreground sm:col-span-1">
+            <input type="checkbox" checked={alreadyReceived} onChange={(e) => setAlreadyReceived(e.target.checked)} /> Already arrived &amp; received</label>}
+        </div>
 
         {/* Section 1: Supplier & Date */}
         <div className="bg-slate-50/80 p-4 rounded-2xl border border-slate-200/80 space-y-4">
@@ -551,6 +598,60 @@ export const NewPurchaseModal: React.FC<NewPurchaseModalProps> = ({
               );
             })}
           </div>
+        </div>
+
+
+        {isIntl && (
+          <div className="space-y-2 rounded-2xl border border-primary/30 bg-primary/5 p-4">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-primary">Purchase Costs <span className="font-normal normal-case">(Cost — waxay galaan unit cost)</span></h3>
+            <div className="grid grid-cols-3 gap-2">
+              <label className="text-[11px] font-semibold text-muted-foreground">Alibaba Fee<input type="number" min="0" step="0.01" value={dc.alibabaFee} onChange={(e) => setDc({ ...dc, alibabaFee: e.target.value })} placeholder="0.00" className="mt-1 w-full rounded-lg border border-border bg-background px-2 py-1.5 text-xs text-foreground" /></label>
+              <label className="text-[11px] font-semibold text-muted-foreground">China Local Freight<input type="number" min="0" step="0.01" value={dc.chinaFreight} onChange={(e) => setDc({ ...dc, chinaFreight: e.target.value })} placeholder="0.00" className="mt-1 w-full rounded-lg border border-border bg-background px-2 py-1.5 text-xs text-foreground" /></label>
+              <label className="text-[11px] font-semibold text-muted-foreground">Mastercard Fee<input type="number" min="0" step="0.01" value={dc.mastercardFee} onChange={(e) => setDc({ ...dc, mastercardFee: e.target.value })} placeholder="0.00" className="mt-1 w-full rounded-lg border border-border bg-background px-2 py-1.5 text-xs text-foreground" /></label>
+            </div>
+          </div>
+        )}
+        {isIntl && (
+          <div className="space-y-2 rounded-2xl border border-primary/30 bg-primary/5 p-4">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-primary">Cargo / Shipment <span className="font-normal normal-case">(Cargo cost = Cost)</span></h3>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              <label className="text-[11px] font-semibold text-muted-foreground">Cargo Cost<input type="number" min="0" step="0.01" value={cargo.cargoCost} onChange={(e) => setCargo({ ...cargo, cargoCost: e.target.value })} placeholder="0.00" className="mt-1 w-full rounded-lg border border-border bg-background px-2 py-1.5 text-xs text-foreground" /></label>
+              <label className="text-[11px] font-semibold text-muted-foreground">Cargo Agent<input type="text" value={cargo.agentName} onChange={(e) => setCargo({ ...cargo, agentName: e.target.value })} className="mt-1 w-full rounded-lg border border-border bg-background px-2 py-1.5 text-xs text-foreground" /></label>
+              <label className="text-[11px] font-semibold text-muted-foreground">Agent Phone<input type="text" value={cargo.agentPhone} onChange={(e) => setCargo({ ...cargo, agentPhone: e.target.value })} className="mt-1 w-full rounded-lg border border-border bg-background px-2 py-1.5 text-xs text-foreground" /></label>
+              <label className="text-[11px] font-semibold text-muted-foreground">Tracking No<input type="text" value={cargo.trackingNo} onChange={(e) => setCargo({ ...cargo, trackingNo: e.target.value })} className="mt-1 w-full rounded-lg border border-border bg-background px-2 py-1.5 text-xs text-foreground" /></label>
+              <label className="text-[11px] font-semibold text-muted-foreground">CBM<input type="number" min="0" step="0.01" value={cargo.cbm} onChange={(e) => setCargo({ ...cargo, cbm: e.target.value })} placeholder="0.00" className="mt-1 w-full rounded-lg border border-border bg-background px-2 py-1.5 text-xs text-foreground" /></label>
+              <label className="text-[11px] font-semibold text-muted-foreground">Method<select value={cargo.shippingMethod} onChange={(e) => setCargo({ ...cargo, shippingMethod: e.target.value })} className="mt-1 w-full rounded-lg border border-border bg-background px-2 py-1.5 text-xs text-foreground"><option>Sea</option><option>Air</option><option>Land</option></select></label>
+              <label className="text-[11px] font-semibold text-muted-foreground">Expected Arrival<input type="date" value={cargo.expectedArrival} onChange={(e) => setCargo({ ...cargo, expectedArrival: e.target.value })} className="mt-1 w-full rounded-lg border border-border bg-background px-2 py-1.5 text-xs text-foreground" /></label>
+            </div>
+          </div>
+        )}
+        {isIntl ? (
+          <div className="space-y-2 rounded-2xl border border-destructive/30 bg-destructive/5 p-4">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-destructive">Cargo Expenses <span className="font-normal normal-case">(Expense — kuma darsamo unit cost)</span></h3>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <label className="text-[11px] font-semibold text-muted-foreground">Xamaali<input type="number" min="0" step="0.01" value={cexp.xamaali} onChange={(e) => setter({ ...cexp, xamaali: e.target.value })} placeholder="0.00" className="mt-1 w-full rounded-lg border border-border bg-background px-2 py-1.5 text-xs text-foreground" /></label>
+            <label className="text-[11px] font-semibold text-muted-foreground">Transportation<input type="number" min="0" step="0.01" value={cexp.transportation} onChange={(e) => setCexp({ ...cexp, transportation: e.target.value })} placeholder="0.00" className="mt-1 w-full rounded-lg border border-border bg-background px-2 py-1.5 text-xs text-foreground" /></label>
+            <label className="text-[11px] font-semibold text-muted-foreground">Other<input type="number" min="0" step="0.01" value={cexp.other} onChange={(e) => setCexp({ ...cexp, other: e.target.value })} placeholder="0.00" className="mt-1 w-full rounded-lg border border-border bg-background px-2 py-1.5 text-xs text-foreground" /></label>
+            <label className="text-[11px] font-semibold text-muted-foreground">Other note<input type="text" value={cexp.otherNote} onChange={(e) => setCexp({ ...cexp, otherNote: e.target.value })} className="mt-1 w-full rounded-lg border border-border bg-background px-2 py-1.5 text-xs text-foreground" /></label>
+          </div>
+        </div>
+        ) : (
+          <div className="space-y-2 rounded-2xl border border-destructive/30 bg-destructive/5 p-4">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-destructive">Purchase Expenses <span className="font-normal normal-case">(Expense — kuma darsamo unit cost)</span></h3>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <label className="text-[11px] font-semibold text-muted-foreground">Xamaali<input type="number" min="0" step="0.01" value={exp.xamaali} onChange={(e) => setter({ ...exp, xamaali: e.target.value })} placeholder="0.00" className="mt-1 w-full rounded-lg border border-border bg-background px-2 py-1.5 text-xs text-foreground" /></label>
+            <label className="text-[11px] font-semibold text-muted-foreground">Transportation<input type="number" min="0" step="0.01" value={exp.transportation} onChange={(e) => setExp({ ...exp, transportation: e.target.value })} placeholder="0.00" className="mt-1 w-full rounded-lg border border-border bg-background px-2 py-1.5 text-xs text-foreground" /></label>
+            <label className="text-[11px] font-semibold text-muted-foreground">Other<input type="number" min="0" step="0.01" value={exp.other} onChange={(e) => setExp({ ...exp, other: e.target.value })} placeholder="0.00" className="mt-1 w-full rounded-lg border border-border bg-background px-2 py-1.5 text-xs text-foreground" /></label>
+            <label className="text-[11px] font-semibold text-muted-foreground">Other note<input type="text" value={exp.otherNote} onChange={(e) => setExp({ ...exp, otherNote: e.target.value })} className="mt-1 w-full rounded-lg border border-border bg-background px-2 py-1.5 text-xs text-foreground" /></label>
+          </div>
+        </div>
+        )}
+
+        <div className="grid grid-cols-2 gap-2 rounded-2xl border border-border bg-card p-4 text-xs sm:grid-cols-4">
+          <div><div className="text-muted-foreground">Product Cost</div><div className="font-bold text-foreground">${calc.productCost.toFixed(2)}</div></div>
+          <div><div className="text-muted-foreground">Landed Cost (COST)</div><div className="font-bold text-primary">${calc.landedCost.toFixed(2)}</div><div className="text-[10px] text-muted-foreground">Unit: ${calc.avgLandedUnitCost.toFixed(2)}</div></div>
+          <div><div className="text-muted-foreground">Expenses</div><div className="font-bold text-destructive">${calc.operationalExpenses.toFixed(2)}</div></div>
+          <div><div className="text-muted-foreground">Total Cash Outflow</div><div className="font-black text-foreground">${calc.totalCashOutflow.toFixed(2)}</div><div className="text-[10px] text-muted-foreground">Supplier owed: ${calc.supplierPayable.toFixed(2)}</div></div>
         </div>
 
         {/* Section 3: Totals, Discounts & Settlement */}

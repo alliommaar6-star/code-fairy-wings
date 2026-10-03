@@ -115,6 +115,11 @@ export interface Supplier {
   email?: string;
   address?: string;
   notes?: string;
+  supplierType?: "LOCAL" | "INTERNATIONAL";
+  location?: string;
+  country?: string;
+  platform?: string;
+  category?: string;
   balance: number; // What we owe them (Accounts Payable)
   totalPurchases: number;
   totalPaid: number;
@@ -359,7 +364,29 @@ export interface PurchaseItem {
   sellingPrice?: number;
   discount?: number;
   total: number;
+  /** Landed/direct unit cost (product + direct costs + cargo cost share). Expenses never included. */
+  landedUnitCost?: number;
 }
+
+export type PurchaseType = "LOCAL" | "INTERNATIONAL";
+/** COSTS: directly part of acquiring the product (capitalized into inventory). */
+export interface PurchaseDirectCosts { alibabaFee?: number; chinaFreight?: number; mastercardFee?: number; }
+/** EXPENSES: operational handling (never added to unit cost). */
+export interface PurchaseOpExpenses { xamaali?: number; transportation?: number; other?: number; otherNote?: string; }
+export interface PurchaseCargo {
+  cargoCost?: number;
+  agentName?: string;
+  agentPhone?: string;
+  trackingNo?: string;
+  cbm?: number;
+  shippingMethod?: string;
+  shippedDate?: string;
+  expectedArrival?: string;
+  arrivedDate?: string;
+  expenses?: PurchaseOpExpenses;
+}
+export type PurchaseStage =
+  | "Draft" | "Ordered" | "Paid" | "Shipped" | "In Transit" | "Arrived" | "Received" | "Cancelled";
 
 export type PurchasePaymentStatus = "full_paid" | "partial_payment" | "credit";
 
@@ -417,6 +444,16 @@ export interface Purchase {
   attachments?: PurchaseAttachment[];
   history?: PurchaseAuditEvent[];
   status: "Received" | "Pending" | "Ordered" | "Cancelled";
+  purchaseType?: PurchaseType;
+  currency?: string;
+  paymentTerms?: string;
+  directCosts?: PurchaseDirectCosts;
+  expenses?: PurchaseOpExpenses;
+  cargo?: PurchaseCargo;
+  stage?: PurchaseStage;
+  stageHistory?: { stage: PurchaseStage; at: string; actor: string; note?: string }[];
+  receivedDate?: string;
+  receivedBy?: string;
   notes?: string;
   actor?: string;
   createdAt: string;
