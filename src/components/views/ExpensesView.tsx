@@ -52,6 +52,19 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({ onOpenNewExpense }) 
     });
   }, [expenses, searchQuery, selectedCategory, scopeFilter]);
 
+  const adsByProduct = useMemo(() => {
+    const map = new Map<string, { name: string; total: number; count: number; last: string }>();
+    for (const e of expenses) {
+      if (e.category !== "Facebook Ads" || !e.adProductId) continue;
+      const cur = map.get(e.adProductId) || { name: e.adProductName || "—", total: 0, count: 0, last: "" };
+      cur.total += e.amount;
+      cur.count += 1;
+      if (e.date > cur.last) cur.last = e.date;
+      map.set(e.adProductId, cur);
+    }
+    return Array.from(map.values()).sort((a, b) => b.total - a.total);
+  }, [expenses]);
+
   const totalExpenseAmount = expenses.reduce((sum, e) => sum + e.amount, 0);
   const pettyCashExpenses = expenses.filter((e) => e.isPettyCash);
   const totalPettyCashAmount = pettyCashExpenses.reduce((sum, e) => sum + e.amount, 0);
@@ -200,6 +213,23 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({ onOpenNewExpense }) 
         </div>
       </div>
 
+      {adsByProduct.length > 0 && (
+        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-4">
+          <div className="text-xs font-black uppercase tracking-wider text-slate-700 mb-3">
+            Facebook Ads — Kharashka Product Kasta
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+            {adsByProduct.map((r) => (
+              <div key={r.name} className="border border-slate-200 rounded-xl p-3 bg-slate-50">
+                <div className="text-xs font-bold text-slate-900 truncate">{r.name}</div>
+                <div className="text-lg font-black text-slate-900">${r.total.toFixed(2)}</div>
+                <div className="text-[10px] text-slate-500">{r.count} jeer · ugu dambeyn {r.last}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Expenses Table */}
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
         <div className="overflow-x-auto">
@@ -249,6 +279,9 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({ onOpenNewExpense }) 
                       <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700">
                         {e.category}
                       </span>
+                      {e.adProductName && (
+                        <div className="text-[10px] text-sky-700 font-bold mt-0.5">{e.adProductName}</div>
+                      )}
                     </td>
 
                     <td className="py-3 px-3 text-slate-500 whitespace-nowrap">{e.date}</td>
