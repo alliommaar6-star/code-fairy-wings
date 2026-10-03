@@ -19,3 +19,4 @@
 - [ ] Delivery Rate = business expense: not added to customer bill when business pays; deduct from net profit; show Product Sale Amount / Customer Payment / Delivery Expense / Net separately in sale/order UI
 - [ ] Build Petty Cash Fund page: record cash paid out, cash in, and box balance
 - [ ] Build EVC Plus reconciliation page: compare system records vs EVC balance
+- [ ] SalesOrdersView: add "Sale from Branches" tab next to Order/Sale — branch dropdown, same layout as direct sale, fixed $2 commission per item sold (charged to branch manager)
