@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { useStaffRole } from "@/lib/roles";
 import { branchTotalsFor } from "../lib/branch-store";
 import { computeEngine, getFinEngineState } from "../lib/financial-engine";
 import { buildDailyNetMap, businessDeliveryCost } from "../lib/daily-net";
@@ -1394,6 +1395,7 @@ const INITIAL_AUDIT_LOGS: AuditLog[] = [
 ];
 
 export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const authenticatedRole = useStaffRole();
   // Load from localStorage or defaults
   const [products, setProducts] = useState<Product[]>(() => {
     const isResetDone = localStorage.getItem("benadir_factory_reset_done") === "true";
@@ -2758,7 +2760,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const factoryReset = (confirmCode: string = "RESET", _overrideRole?: string): boolean => {
-    if (currentUser.role !== "Owner") {
+    if (authenticatedRole !== "owner") {
       return false;
     }
     if (confirmCode.trim() !== "RESET") {
@@ -3579,7 +3581,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const initializeOpeningAccounts = (opening: Omit<PaymentAccount, "id">[]) => {
-    if (currentUser.role !== "Owner" || localStorage.getItem("benadir_opening_complete_v1") === "true" || !opening.length || opening.some(a => !Number.isFinite(a.balance) || a.balance < 0)) return;
+    if (authenticatedRole !== "owner" || localStorage.getItem("benadir_opening_complete_v1") === "true" || !opening.length || opening.some(a => !Number.isFinite(a.balance) || a.balance < 0)) return;
     setAccounts(opening.map((a, i) => ({ ...a, id: `acc-opening-${Date.now()}-${i}` })));
     localStorage.setItem("benadir_opening_complete_v1", "true");
     addAuditLog("OPENING_BALANCES", "ACCOUNTS", `Recorded ${opening.length} opening account balances`);
