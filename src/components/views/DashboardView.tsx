@@ -98,7 +98,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate, onOpen
   const fmtLabel = (a: string, b: string) => a === b ? format(parseISO(a), 'MMM d, yyyy') : `${format(parseISO(a), 'MMM d, yyyy')} – ${format(parseISO(b), 'MMM d, yyyy')}`;
   const periodLabel = fmtLabel(start, end);
   const comparedLabel = fmtLabel(comparisonStart, comparisonEnd);
-  const prevLabel = fmtLabel(prevStart, prevEnd);
+  const prevLabel = comparisonDays === 1 ? fmtLabel(prevEnd, prevEnd) : fmtLabel(prevStart, prevEnd);
   const branchName = branchFilter === 'all' ? 'All (store + branches)' : branchFilter === 'main' ? 'Main store' : branches.branches.find(b => b.id === branchFilter)?.name ?? 'Branch';
   const comparison = [
     { label: 'Sales', now: comparisonNow.total.sales, before: comparisonBefore.total.sales },
@@ -281,7 +281,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate, onOpen
         {branchFilter !== 'all' && <p className="-mt-3 text-[11px] text-muted-foreground">Other income & expenses are counted only under “All”.</p>}
 
         <section aria-label="Period comparison" className="dashboard-panel border border-border bg-card p-4 sm:p-5">
-          <div className="mb-3 flex flex-wrap items-center justify-between gap-2"><div><h2 className="dashboard-heading text-base font-semibold text-foreground">Compared with previous period</h2><p className="text-xs text-muted-foreground">{comparedLabel} vs {prevLabel} · {branchName}</p></div><label className="text-xs text-muted-foreground">Comparison <select aria-label="Comparison days" value={comparisonDays} onChange={e => setComparisonDays(Number(e.target.value))} className="ml-2 h-9 rounded border border-border bg-card px-2 text-foreground"><option value={16}>16 days</option><option value={7}>7 days</option><option value={30}>30 days</option><option value={lengthDays}>Selected range ({lengthDays} days)</option></select></label></div>
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2"><div><h2 className="dashboard-heading text-base font-semibold text-foreground">Compared with previous period</h2><p className="text-xs text-muted-foreground">{comparedLabel} vs {prevLabel} · {branchName}</p></div><label className="text-xs text-muted-foreground">Comparison <select aria-label="Comparison days" value={comparisonDays} onChange={e => setComparisonDays(Number(e.target.value))} className="ml-2 h-9 rounded border border-border bg-card px-2 text-foreground"><option value={1}>Today vs yesterday</option><option value={16}>16 days</option><option value={7}>7 days</option><option value={30}>30 days</option>{lengthDays !== 1 && <option value={lengthDays}>Selected range ({lengthDays} days)</option>}</select></label></div>
           <div className="grid grid-cols-2 gap-2 md:grid-cols-4">{comparison.map(c => { const p = pct(c.now, c.before); const good = p === null ? true : c.inverse ? p <= 0 : p >= 0; return (
             <div key={c.label} className="border border-border p-3"><div className="dashboard-kicker text-muted-foreground">{c.label}</div><div className="dashboard-heading mt-1 text-lg font-semibold text-foreground">{money(c.now)}</div><div className="mt-1 flex items-center justify-between text-[11px]"><span className="text-muted-foreground">Before {money(c.before)}</span><strong className={good ? 'text-primary' : 'text-destructive'}>{p === null ? 'new' : `${p >= 0 ? '+' : ''}${p.toFixed(1)}%`}</strong></div></div>
           ); })}</div>
@@ -321,10 +321,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate, onOpen
           ); })}
         </section>
 
-        <section aria-label="Targets" className="grid grid-cols-1 gap-2 md:grid-cols-3">
+        <section aria-label="Targets" className="grid grid-cols-1 gap-2 md:grid-cols-[1.6fr_1fr_1fr]">
           {tgtRows.map(r => { const remaining = Math.max(0, r.target - r.net); const extra = Math.max(0, r.net - r.target); return (
-            <div key={r.label} id={`kpi-target-${r.label.toLowerCase()}`} className="border border-border bg-card p-3.5">
-              <div className="flex items-center justify-between"><span className="dashboard-kicker text-muted-foreground">{r.label} target</span><Target className="h-4 w-4 text-[var(--dash-clay)]" /></div>
+            <div key={r.label} id={`kpi-target-${r.label.toLowerCase()}`} className={`border border-border bg-card p-3.5 ${r.label === 'Daily' ? 'border-primary p-5' : ''}`}>
+              <div className="flex items-center justify-between"><span className="dashboard-kicker text-muted-foreground">{r.label === 'Daily' ? 'Today' : r.label} target</span><Target className="h-4 w-4 text-[var(--dash-clay)]" /></div>
+              {r.label === 'Daily' && <strong className={`mt-2 block text-3xl font-bold sm:text-4xl ${extra > 0 ? 'text-positive' : 'text-destructive'}`}>{extra > 0 ? '+' : '-'}{money(extra > 0 ? extra : remaining)}</strong>}
               <div className="mt-2 space-y-1 text-xs">
                 <div className="flex justify-between"><span className="text-muted-foreground">Target</span><strong className="text-foreground">{money(r.target)}</strong></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Net profit</span><strong className="text-foreground">{money(r.net)}</strong></div>
