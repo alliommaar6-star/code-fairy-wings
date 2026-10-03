@@ -285,6 +285,8 @@ export interface PaymentAccount {
   name: string;
   type: "Cash" | "Mobile Money" | "Bank" | "Vault" | "cash" | "mobile_money" | "bank";
   accountNumber?: string;
+  accountHolder?: string;
+  telephone?: string;
   balance: number;
   currency: string;
   isActive?: boolean;

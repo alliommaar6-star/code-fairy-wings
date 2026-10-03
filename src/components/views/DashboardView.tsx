@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ShoppingCart, TrendingUp, TrendingDown, DollarSign, Target, Wallet, Users, Package, Plus, ArrowUpRight, Truck, ChevronRight, Building2, Sparkles, Receipt, CalendarDays, Download, FileText } from 'lucide-react';
+import { ShoppingCart, TrendingUp, TrendingDown, DollarSign, Target, Wallet, Users, Package, Plus, ArrowUpRight, Truck, ChevronRight, Building2, Sparkles, Receipt, CalendarDays, Download, FileText, Eye, EyeOff } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { differenceInCalendarDays, eachDayOfInterval, format, parseISO, subDays } from 'date-fns';
 import type { DateRange } from 'react-day-picker';
@@ -12,6 +12,7 @@ import type { NavSection } from '../layout/Sidebar';
 import { computeEngine, useFinEngine } from '@/lib/financial-engine';
 import { buildDailyNetMap, businessDeliveryCost } from '@/lib/daily-net';
 import { canAccess, useStaffRole } from '@/lib/roles';
+import { verifyBalancePin } from '@/lib/balance-pin.functions';
 
 interface DashboardViewProps {
   onNavigate: (tab: NavSection) => void;
@@ -36,6 +37,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate, onOpen
   const [activityQuery, setActivityQuery] = useState('');
   const [activityType, setActivityType] = useState('all');
   const [activityLimit, setActivityLimit] = useState(25);
+  const [activityFrom, setActivityFrom] = useState('');
+  const [activityTo, setActivityTo] = useState('');
+  const [selectedActivity, setSelectedActivity] = useState<string | null>(null);
+  const [balanceVisible, setBalanceVisible] = useState(false);
+  const [pinOpen, setPinOpen] = useState(false);
+  const [pin, setPin] = useState('');
+  const [pinError, setPinError] = useState('');
   const [profitMonth, setProfitMonth] = useState(() => format(new Date(), 'yyyy-MM'));
   const [draftRange, setDraftRange] = useState<DateRange | undefined>(range);
   const [rangeOpen, setRangeOpen] = useState(false);
@@ -105,8 +113,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate, onOpen
   const fileBase = `benadir-report-${start}_${end}`;
   const exportCSV = () => {
     const esc = (v: string | number) => `"${String(v).replace(/"/g, '""')}"`;
+    const safe = (v: string | number) => { const s = String(v); return esc(/^[\s]*[=+@\-]/.test(s) ? `'${s}` : s); };
     const lines = [
       ['Benadir Store - Sales & Profit Report'], ['Period', periodLabel], ['Comparison', `${comparedLabel} vs ${prevLabel}`], ['Filter', branchName], [],
+      ['DASHBOARD KPIs', 'Value'],
+      ...metrics.map(m => [m.label, m.value.toFixed(2)]),
+      ['Today net profit', todayNetProfit.toFixed(2)], ['Month net profit', monthProfit.toFixed(2)], ['Year net profit', pYearC.net.toFixed(2)], ['All-time net profit', allTimeProfit.toFixed(2)],
+      ...tgtRows.flatMap(r => [[`${r.label} target`, r.target.toFixed(2)], [`${r.label} net profit`, r.net.toFixed(2)], [`${r.label} difference`, (r.net - r.target).toFixed(2)]]), [],
       ['Date', 'Sales', 'Gross profit', 'Other income', 'Expenses', 'Net profit'],
       ...performanceData.map(d => [d.fullDate, d.sales.toFixed(2), d.gross.toFixed(2), d.income.toFixed(2), d.expenses.toFixed(2), d.profit.toFixed(2)]),
       ['TOTAL', period.sales.toFixed(2), period.gross.toFixed(2), period.income.toFixed(2), period.expenses.toFixed(2), periodNetProfit.toFixed(2)],
@@ -114,8 +127,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate, onOpen
       ...comparison.map(c => { const p = pct(c.now, c.before); return [c.label, c.now.toFixed(2), c.before.toFixed(2), p === null ? 'new' : p.toFixed(1)]; }),
       [], ['Branch', 'Sales count', 'Sales', 'Commission', 'Profit'],
       ...branchRows.map(r => [r.name, r.count, r.sales.toFixed(2), r.commission.toFixed(2), r.profit.toFixed(2)]),
+      [], ['BUSINESS ACTIVITY', `Date: ${activityFrom || start} to ${activityTo || end}`, `Type: ${activityType}`, `Search: ${activityQuery}`],
+      ['Date / time', 'Event type', 'Reference', 'Details', 'Amount', 'Section'],
+      ...visibleActivity.map(a => [a.date, a.type, a.title, a.detail, a.amount ?? '', a.section]),
     ];
-    const blob = new Blob(['\ufeff' + lines.map(l => l.map(esc).join(',')).join('\n')], { type: 'text/csv;charset=utf-8' });
+    const blob = new Blob(['\ufeff' + lines.map(l => l.map(safe).join(',')).join('\n')], { type: 'text/csv;charset=utf-8' });
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `${fileBase}.csv`; a.click(); URL.revokeObjectURL(a.href);
   };
   const exportPDF = () => {
@@ -164,7 +180,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate, onOpen
   ];
   type Activity = { id: string; date: string; type: string; title: string; detail: string; amount?: number; section: NavSection };
   const activity: Activity[] = [];
-  const addActivity = (row: Activity) => { if (canAccess(role, row.section) && row.date.slice(0, 10) >= start && row.date.slice(0, 10) <= end) activity.push(row); };
+  const addActivity = (row: Activity) => { if (canAccess(role, row.section) && row.date.slice(0, 10) >= (activityFrom || start) && row.date.slice(0, 10) <= (activityTo || end)) activity.push(row); };
   if (branchFilter === 'all' || branchFilter === 'main') {
     sales.forEach(s => addActivity({ id: `sale-${s.id}`, date: `${s.date} ${s.time || ''}`, type: 'Sale', title: s.invoiceNo, detail: `${s.customerName} · ${s.status} · ${s.items.map(i => `${i.productName} ×${i.quantity}`).join(', ')} · Paid ${money(s.amountPaid)} · Profit ${money(s.grossProfit - businessDeliveryCost(s))}`, amount: s.grandTotal, section: 'sales' }));
     orders.forEach(o => addActivity({ id: `order-${o.id}`, date: `${o.date} ${o.time || ''}`, type: 'Order', title: o.orderNo, detail: `${o.customerName} · ${o.status} · ${o.items.map(i => `${i.productName} ×${i.quantity}`).join(', ')} · Paid ${money(o.paidAmount)}`, amount: o.total, section: 'sales' }));
@@ -224,6 +240,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate, onOpen
             <div className="dashboard-kicker mb-2 flex items-center gap-2"><span className="inline-block h-1.5 w-1.5 rounded-full bg-[var(--dash-mint)]" /> STORE OVERVIEW <span className="text-muted-foreground">/ {periodLabel}</span></div>
             <h1 className="dashboard-heading text-2xl font-bold text-foreground sm:text-3xl">Good day, {currentUser.name}</h1>
             <p className="mt-1 text-sm text-muted-foreground">Sales and profit · {periodLabel}</p>
+          </div>
+          <div className="flex min-w-[160px] flex-col items-center gap-1 text-center" aria-label="Total account balance">
+            <span className="dashboard-kicker text-muted-foreground">Lacagta guud</span>
+            <strong className="text-2xl font-bold text-foreground sm:text-3xl">{balanceVisible ? money(totalCashInHand) : '••••••'}</strong>
+            <Button size="sm" variant="ghost" onClick={() => { if (balanceVisible) setBalanceVisible(false); else { setPin(''); setPinError(''); setPinOpen(true); } }} aria-label={balanceVisible ? 'Qari lacagta' : 'Arag lacagta'}>{balanceVisible ? <EyeOff /> : <Eye />} {balanceVisible ? 'Qari' : 'Arag'}</Button>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <div className="flex gap-1" aria-label="Date presets">
@@ -330,10 +351,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate, onOpen
         {branchRows.length > 0 && <section aria-label="Branch performance" className="dashboard-panel border border-border bg-card p-4 sm:p-5"><h2 className="dashboard-heading text-base font-semibold text-foreground">Sales & profit by branch</h2><p className="mb-3 text-xs text-muted-foreground">{periodLabel}</p><div className="overflow-x-auto"><table className="w-full text-xs"><thead><tr className="border-b border-border text-left text-muted-foreground"><th className="py-2">Branch</th><th className="py-2 text-right">Sales #</th><th className="py-2 text-right">Sales</th><th className="py-2 text-right">Commission</th><th className="py-2 text-right">Profit</th></tr></thead><tbody className="divide-y divide-border">{branchRows.map(r => <tr key={r.id} onClick={() => setBranchFilter(r.id)} className={`cursor-pointer hover:bg-accent ${branchFilter === r.id ? 'bg-accent' : ''}`}><td className="py-2 font-semibold text-foreground">{r.name}</td><td className="py-2 text-right">{r.count}</td><td className="py-2 text-right">{money(r.sales)}</td><td className="py-2 text-right">{money(r.commission)}</td><td className="py-2 text-right font-semibold text-foreground">{money(r.profit)}</td></tr>)}</tbody></table></div></section>}
 
         <section aria-label="Business activity" className="dashboard-panel border border-border bg-card p-4 sm:p-5">
-          <div className="mb-4 flex flex-wrap items-start justify-between gap-3"><div><h2 className="dashboard-heading text-base font-semibold text-foreground">Business activity</h2><p className="text-xs text-muted-foreground">{periodLabel} · {branchName} · {visibleActivity.length} events</p></div><div className="flex flex-wrap gap-2"><input aria-label="Search business activity" placeholder="Search activity…" value={activityQuery} onChange={e => { setActivityQuery(e.target.value); setActivityLimit(25); }} className="h-9 min-w-0 max-w-full rounded border border-border bg-background px-3 text-xs text-foreground" /><select aria-label="Activity type" value={activityType} onChange={e => { setActivityType(e.target.value); setActivityLimit(25); }} className="h-9 rounded border border-border bg-background px-2 text-xs text-foreground"><option value="all">All events</option>{activityTypes.map(type => <option key={type} value={type}>{type}</option>)}</select></div></div>
-          {visibleActivity.length === 0 ? <p className="border-t border-border py-8 text-center text-sm text-muted-foreground">No matching activity in this period.</p> : <div className="divide-y divide-border border-t border-border">{visibleActivity.slice(0, activityLimit).map(a => <div key={a.id} className="flex flex-wrap items-start justify-between gap-2 py-3 text-xs sm:flex-nowrap"><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><span className="dashboard-kicker text-primary">{a.type}</span><span className="text-muted-foreground">{a.date}</span></div><div className="mt-1 font-semibold text-foreground">{a.title}</div><p className="mt-0.5 break-words text-muted-foreground">{a.detail}</p></div><div className="flex shrink-0 items-center gap-2">{a.amount !== undefined && <strong className={a.amount < 0 ? 'text-destructive' : 'text-foreground'}>{money(a.amount)}</strong>}<Button variant="ghost" size="icon" aria-label={`Open ${a.type} ${a.title}`} title={`Open ${a.type}`} className="h-7 w-7" onClick={() => onNavigate(a.section)}><ChevronRight className="h-4 w-4" /></Button></div></div>)}</div>}
+          <div className="mb-4 flex flex-wrap items-start justify-between gap-3"><div><h2 className="dashboard-heading text-base font-semibold text-foreground">Business activity</h2><p className="text-xs text-muted-foreground">{activityFrom || start} – {activityTo || end} · {branchName} · {visibleActivity.length} events</p></div><div className="flex flex-wrap gap-2"><input aria-label="Search business activity" placeholder="Search activity…" value={activityQuery} onChange={e => { setActivityQuery(e.target.value); setActivityLimit(25); }} className="h-9 min-w-0 max-w-full rounded border border-border bg-background px-3 text-xs text-foreground" /><input aria-label="Activity start date" type="date" value={activityFrom || start} onChange={e => { setActivityFrom(e.target.value); setActivityLimit(25); }} className="h-9 rounded border border-border bg-background px-2 text-xs text-foreground" /><input aria-label="Activity end date" type="date" value={activityTo || end} onChange={e => { setActivityTo(e.target.value); setActivityLimit(25); }} className="h-9 rounded border border-border bg-background px-2 text-xs text-foreground" /><select aria-label="Activity type" value={activityType} onChange={e => { setActivityType(e.target.value); setActivityLimit(25); }} className="h-9 rounded border border-border bg-background px-2 text-xs text-foreground"><option value="all">All events</option>{activityTypes.map(type => <option key={type} value={type}>{type}</option>)}</select></div></div>
+          {visibleActivity.length === 0 ? <p className="border-t border-border py-8 text-center text-sm text-muted-foreground">No matching activity in this period.</p> : <div className="divide-y divide-border border-t border-border">{visibleActivity.slice(0, activityLimit).map(a => <div key={a.id} className="flex flex-wrap items-start justify-between gap-2 py-3 text-xs sm:flex-nowrap"><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><span className="dashboard-kicker text-primary">{a.type}</span><span className="text-muted-foreground">{a.date}</span></div><div className="mt-1 font-semibold text-foreground">{a.title}</div><p className="mt-0.5 break-words text-muted-foreground">{a.detail}</p></div><div className="flex shrink-0 items-center gap-2">{a.amount !== undefined && <strong className={a.amount < 0 ? 'text-destructive' : 'text-foreground'}>{money(a.amount)}</strong>}<Button variant="ghost" size="icon" aria-label={`View details for ${a.type} ${a.title}`} title="View details" className="h-7 w-7" onClick={() => setSelectedActivity(a.id)}><ChevronRight className="h-4 w-4" /></Button></div></div>)}</div>}
           {visibleActivity.length > activityLimit && <div className="pt-4 text-center"><Button variant="outline" size="sm" onClick={() => setActivityLimit(n => n + 25)}>Show more ({visibleActivity.length - activityLimit} remaining)</Button></div>}
         </section>
+        {selectedActivity && (() => { const a = visibleActivity.find(x => x.id === selectedActivity); return a && <div role="dialog" aria-modal="true" aria-label="Transaction details" className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 p-4"><div className="w-full max-w-lg space-y-4 border border-border bg-card p-5 shadow-lg"><div className="flex justify-between"><h2 className="text-lg font-bold text-foreground">{a.type} · {a.title}</h2><Button variant="ghost" onClick={() => setSelectedActivity(null)}>Close</Button></div><dl className="space-y-2 break-words text-sm text-foreground"><dt className="font-semibold">Date & time</dt><dd>{a.date}</dd><dt className="font-semibold">Details</dt><dd>{a.detail}</dd>{a.amount !== undefined && <><dt className="font-semibold">Amount</dt><dd>{money(a.amount)}</dd></>}</dl><Button variant="outline" onClick={() => { setSelectedActivity(null); onNavigate(a.section); }}>Open {a.type}</Button></div></div>; })()}
+        {pinOpen && <div role="dialog" aria-modal="true" aria-label="Unlock balance" className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 p-4"><form onSubmit={async e => { e.preventDefault(); try { const valid = await verifyBalancePin({ data: { pin } }); if (valid) { setBalanceVisible(true); setPinOpen(false); setPin(''); setPinError(''); } else setPinError('PIN khaldan.'); } catch { setPinError('Lama xaqiijin karo PIN-ka hadda.'); } }} className="w-full max-w-sm space-y-4 border border-border bg-card p-5 shadow-lg"><h2 className="text-lg font-bold text-foreground">Arag lacagta</h2><label className="block text-sm text-foreground">Geli PIN<input autoFocus type="password" inputMode="numeric" autoComplete="off" value={pin} onChange={e => setPin(e.target.value)} className="mt-2 w-full rounded border border-input bg-background p-2" /></label>{pinError && <p role="alert" className="text-sm text-destructive">{pinError}</p>}<div className="flex gap-2"><Button type="submit">Fur</Button><Button type="button" variant="outline" onClick={() => { setPinOpen(false); setPin(''); }}>Xir</Button></div></form></div>}
       </div>
     </div>
   );
