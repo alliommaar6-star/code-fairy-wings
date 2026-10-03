@@ -225,10 +225,17 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate, onOpen
   activity.sort((a, b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id));
   const activityTypes = [...new Set(activity.map(a => a.type))].sort();
   const visibleActivity = activity.filter(a => (activityType === 'all' || a.type === activityType) && `${a.title} ${a.detail} ${a.type} ${a.date}`.toLowerCase().includes(activityQuery.toLowerCase().trim()));
+  const inRange = (date: string) => { const k = (date || '').slice(0, 10); return k >= start && k <= end; };
+  const showMainBranch = branchFilter === 'all' || branchFilter === 'main';
+  const periodDeliveryExpense = (showMainBranch
+    ? sales.filter(s => s.status === 'Completed' && inRange(s.date)).reduce((sum, s) => sum + businessDeliveryCost(s), 0)
+      + orders.filter(o => o.status === 'delivered' && !o.convertedSaleId && inRange(o.date)).reduce((sum, o) => sum + businessDeliveryCost(o), 0)
+    : 0);
+  const periodDailyExpenses = branchFilter === 'all' ? expenses.filter(e => inRange(e.date)).reduce((sum, e) => sum + e.amount, 0) : 0;
   const metrics = [
     { id: 'kpi-today-sales', label: 'Sales', value: period.sales, note: 'Completed sales & orders', icon: ShoppingCart, to: 'sales' as NavSection, tone: 'mint' },
     { id: 'kpi-total-income', label: 'Other Income', value: period.income, note: 'Services & other income', icon: TrendingUp, to: 'income' as NavSection, tone: 'teal' },
-    { id: 'kpi-total-expenses', label: 'Expenses', value: period.expenses, note: 'Operating costs', icon: TrendingDown, to: 'expenses' as NavSection, tone: 'clay' },
+    { id: 'kpi-total-expenses', label: 'Expenses', value: period.expenses, note: `Delivery ${money(periodDeliveryExpense)} · Daily ${money(periodDailyExpenses)}`, icon: TrendingDown, to: 'expenses' as NavSection, tone: 'clay' },
     { id: 'kpi-net-profit', label: 'Gross Profit', value: period.gross, note: 'After cost & commissions', icon: DollarSign, to: 'reports' as NavSection, tone: 'mint' },
     { id: 'kpi-receivables-debt', label: 'Receivables', value: totalRemainingDebt, note: 'Customer credit', icon: Users, to: 'customers' as NavSection, tone: 'clay' },
     { id: 'kpi-stock-valuation', label: 'Stock Value', value: totalStockValueSelling, note: `${products.length} active products`, icon: Package, to: 'inventory' as NavSection, tone: 'mint' },
