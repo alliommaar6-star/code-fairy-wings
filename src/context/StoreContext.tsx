@@ -3854,6 +3854,104 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   // Purchase Engine - Database-authoritative sequential ID, atomic stock, cost layer, supplier & accounts integration
+  const applyPurchaseReceipt = (newPurchase: Purchase) => {
+    const now = new Date().toISOString();
+    const dateOnly = newPurchase.receivedDate || now.split("T")[0];
+    const purchaseNo = newPurchase.purchaseNo;
+
+      setProducts((prev) =>
+        prev.map((prod) => {
+          const item = newPurchase.items.find((it) => it.productId === prod.id);
+          if (!item) return prod;
+
+          const oldStock = prod.stock;
+          const newStock = oldStock + item.quantity;
+          const oldCost = prod.costPrice;
+          const newCost = item.landedUnitCost ?? item.costPrice;
+          const newSelling =
+            item.sellingPrice && item.sellingPrice > 0 ? item.sellingPrice : prod.sellingPrice;
+
+          // Weighted average cost formula: ((oldStock * oldCost) + (itemQty * itemCost)) / newStock
+          const totalVal = oldStock * oldCost + item.quantity * newCost;
+          const weightedCost =
+            newStock > 0 ? parseFloat((totalVal / newStock).toFixed(2)) : newCost;
+
+          const newLayer: CostLayer = {
+            id: `layer-${Date.now()}-${item.productId}`,
+            date: dateOnly,
+            quantity: item.quantity,
+            remainingQuantity: item.quantity,
+            costPrice: newCost,
+            sellingPrice: newSelling,
+            source: "purchase",
+            referenceNo: purchaseNo,
+            notes: `PO #${purchaseNo} - Supplier: ${newPurchase.supplierName}`,
+          };
+
+          const costLayers = [newLayer, ...(prod.costLayers || [])];
+
+          const priceHistory = [...(prod.priceHistory || [])];
+          if (newCost !== oldCost || newSelling !== prod.sellingPrice) {
+            priceHistory.unshift({
+              id: `ph-${Date.now()}-${item.productId}`,
+              date: dateOnly,
+              oldCost,
+              newCost,
+              oldSelling: prod.sellingPrice,
+              newSelling,
+              actor: currentUser.name || "Admin",
+              reason: `Purchase PO #${purchaseNo}`,
+            });
+          }
+
+          const history = [...(prod.history || [])];
+          history.unshift({
+            id: `he-${Date.now()}-${item.productId}`,
+            timestamp: new Date().toLocaleString([], { dateStyle: "short", timeStyle: "short" }),
+            actor: currentUser.name || "Admin",
+            action: "PURCHASE_RECEIPT",
+            oldValue: `${oldStock} ${prod.unit} @ $${oldCost.toFixed(2)}`,
+            newValue: `${newStock} ${prod.unit} (Weighted Avg $${weightedCost.toFixed(2)})`,
+            details: `Received +${item.quantity} ${prod.unit} at $${newCost.toFixed(2)} cost from ${newPurchase.supplierName}. PO: ${purchaseNo}`,
+          });
+
+          return {
+            ...prod,
+            stock: newStock,
+            costPrice: weightedCost,
+            sellingPrice: newSelling,
+            costLayers,
+            priceHistory,
+            history,
+            updatedAt: now,
+          };
+        }),
+      );
+
+      // 3. Record canonical inventory movements
+      const purchaseMovements: InventoryMovement[] = newPurchase.items.map((item) => {
+        const prod = products.find((p) => p.id === item.productId);
+        const stockAfter = (prod ? prod.stock : 0) + item.quantity;
+        return {
+          id: `mov-${Date.now()}-${item.productId}`,
+          date: dateOnly,
+          productId: item.productId,
+          productName: item.productName,
+          type: "purchase",
+          quantityChange: item.quantity,
+          stockAfter,
+          costPrice: item.landedUnitCost ?? item.costPrice,
+          sellingPrice: item.sellingPrice || prod?.sellingPrice || 0,
+          unit: item.unit || prod?.unit || "PCS",
+          referenceNo: purchaseNo,
+          reason: `Purchase Inflow PO #${purchaseNo} (${newPurchase.supplierName})`,
+          actor: currentUser.name || "Admin",
+        };
+      });
+      setInventoryMovements((prev) => [...purchaseMovements, ...prev]);
+    
+  };
+
   const createPurchase = (
     purchaseData: Omit<Purchase, "id" | "purchaseNo" | "createdAt"> & { purchaseNo?: string },
   ): Purchase => {
@@ -3928,99 +4026,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     setPurchases((prev) => [newPurchase, ...prev]);
 
-    // 2. Atomic restock & cost layers on each product if status is 'Received'
-    if (newPurchase.status === "Received") {
-      setProducts((prev) =>
-        prev.map((prod) => {
-          const item = newPurchase.items.find((it) => it.productId === prod.id);
-          if (!item) return prod;
-
-          const oldStock = prod.stock;
-          const newStock = oldStock + item.quantity;
-          const oldCost = prod.costPrice;
-          const newCost = item.costPrice;
-          const newSelling =
-            item.sellingPrice && item.sellingPrice > 0 ? item.sellingPrice : prod.sellingPrice;
-
-          // Weighted average cost formula: ((oldStock * oldCost) + (itemQty * itemCost)) / newStock
-          const totalVal = oldStock * oldCost + item.quantity * newCost;
-          const weightedCost =
-            newStock > 0 ? parseFloat((totalVal / newStock).toFixed(2)) : newCost;
-
-          const newLayer: CostLayer = {
-            id: `layer-${Date.now()}-${item.productId}`,
-            date: dateOnly,
-            quantity: item.quantity,
-            remainingQuantity: item.quantity,
-            costPrice: newCost,
-            sellingPrice: newSelling,
-            source: "purchase",
-            referenceNo: purchaseNo,
-            notes: `PO #${purchaseNo} - Supplier: ${newPurchase.supplierName}`,
-          };
-
-          const costLayers = [newLayer, ...(prod.costLayers || [])];
-
-          const priceHistory = [...(prod.priceHistory || [])];
-          if (newCost !== oldCost || newSelling !== prod.sellingPrice) {
-            priceHistory.unshift({
-              id: `ph-${Date.now()}-${item.productId}`,
-              date: dateOnly,
-              oldCost,
-              newCost,
-              oldSelling: prod.sellingPrice,
-              newSelling,
-              actor: currentUser.name || "Admin",
-              reason: `Purchase PO #${purchaseNo}`,
-            });
-          }
-
-          const history = [...(prod.history || [])];
-          history.unshift({
-            id: `he-${Date.now()}-${item.productId}`,
-            timestamp: new Date().toLocaleString([], { dateStyle: "short", timeStyle: "short" }),
-            actor: currentUser.name || "Admin",
-            action: "PURCHASE_RECEIPT",
-            oldValue: `${oldStock} ${prod.unit} @ $${oldCost.toFixed(2)}`,
-            newValue: `${newStock} ${prod.unit} (Weighted Avg $${weightedCost.toFixed(2)})`,
-            details: `Received +${item.quantity} ${prod.unit} at $${newCost.toFixed(2)} cost from ${newPurchase.supplierName}. PO: ${purchaseNo}`,
-          });
-
-          return {
-            ...prod,
-            stock: newStock,
-            costPrice: weightedCost,
-            sellingPrice: newSelling,
-            costLayers,
-            priceHistory,
-            history,
-            updatedAt: now,
-          };
-        }),
-      );
-
-      // 3. Record canonical inventory movements
-      const purchaseMovements: InventoryMovement[] = newPurchase.items.map((item) => {
-        const prod = products.find((p) => p.id === item.productId);
-        const stockAfter = (prod ? prod.stock : 0) + item.quantity;
-        return {
-          id: `mov-${Date.now()}-${item.productId}`,
-          date: dateOnly,
-          productId: item.productId,
-          productName: item.productName,
-          type: "purchase",
-          quantityChange: item.quantity,
-          stockAfter,
-          costPrice: item.costPrice,
-          sellingPrice: item.sellingPrice || prod?.sellingPrice || 0,
-          unit: item.unit || prod?.unit || "PCS",
-          referenceNo: purchaseNo,
-          reason: `Purchase Inflow PO #${purchaseNo} (${newPurchase.supplierName})`,
-          actor: currentUser.name || "Admin",
-        };
-      });
-      setInventoryMovements((prev) => [...purchaseMovements, ...prev]);
-    }
+    if (newPurchase.status === "Received") applyPurchaseReceipt(newPurchase);
 
     // 4. Update supplier balance and totals
     if (newPurchase.supplierId) {
