@@ -238,7 +238,7 @@ export const BranchSalesPanel: React.FC = () => {
                 <th className="px-3 text-right">Wadarta</th><th className="px-3 text-right">Commission</th><th className="px-3 text-right">Faa'iido</th></tr></thead>
               <tbody>
                 {branchSales.length === 0 ? (
-                  <tr><td colSpan={5} className="py-8 text-center text-slate-400"><Building className="w-6 h-6 mx-auto mb-1" />Iib branch weli lama diiwaan gelin.</td></tr>
+                  <tr><td colSpan={6} className="py-8 text-center text-slate-400"><Building className="w-6 h-6 mx-auto mb-1" />Iib branch weli lama diiwaan gelin.</td></tr>
                 ) : branchSales.map((s) => (
                   <tr key={s.id} className="border-t border-slate-100">
                     <td className="py-2 px-3">{s.date} <span className="text-slate-400">{s.time}</span></td>
