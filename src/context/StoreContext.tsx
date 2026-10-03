@@ -2890,12 +2890,12 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       setInventoryMovements((prev) => [...returnMovements, ...prev]);
     }
 
-    // Deduct refund from cash account
-    setAccounts((prev) =>
-      prev.map((acc) =>
-        acc.id === "acc-cash" ? { ...acc, balance: acc.balance - newReturn.totalRefund } : acc,
-      ),
-    );
+    // Deduct refund from the cash account (match by type — IDs change after opening-balance setup)
+    setAccounts((prev) => {
+      const cash = prev.find(a => a.type === "Cash") || prev.find(a => a.isDefault) || prev[0];
+      if (!cash) return prev;
+      return prev.map((acc) => acc.id === cash.id ? { ...acc, balance: acc.balance - newReturn.totalRefund } : acc);
+    });
 
     setReturns((prev) => [newReturn, ...prev]);
   };
