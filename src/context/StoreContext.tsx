@@ -2108,12 +2108,15 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       subtotal: order.subtotal,
       discount: order.discount,
       deliveryFee: order.deliveryFee,
+      deliveryFeePayer: order.deliveryFeePayer,
+      deliveryRate: order.deliveryRate,
       grandTotal: order.total,
       costOfGoods: order.items.reduce((s, i) => s + i.costPrice * i.quantity, 0),
       grossProfit:
         order.subtotal -
         order.discount -
-        order.items.reduce((s, i) => s + i.costPrice * i.quantity, 0),
+        order.items.reduce((s, i) => s + i.costPrice * i.quantity, 0) -
+        businessDeliveryCost(order),
       amountPaid: order.paidAmount,
       remainingBalance: Math.max(0, order.total - order.paidAmount),
       paymentMethod: (order.paymentMethod as any) || "EVC Plus",
@@ -4230,7 +4233,17 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       todaySalesList.reduce((sum, s) => sum + s.grandTotal, 0) +
       deliveredOrders.reduce((sum, o) => sum + o.total, 0) +
       branch.total;
-    const todayProfit = todaySalesList.reduce((sum, s) => sum + s.grossProfit, 0) + branch.profit;
+    const todayProfit =
+      todaySalesList.reduce((sum, s) => sum + s.grossProfit, 0) +
+      deliveredOrders.reduce(
+        (sum, o) =>
+          sum +
+          (o.total -
+            (o.items || []).reduce((c, it) => c + (it.costPrice || 0) * it.quantity, 0) -
+            businessDeliveryCost(o)),
+        0,
+      ) +
+      branch.profit;
     const todayExpenses = expenses
       .filter((e) => e.date === todayStr)
       .reduce((sum, e) => sum + e.amount, 0);
@@ -4275,7 +4288,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const totalPaid = validSales.reduce((sum, s) => sum + s.amountPaid, 0);
     const totalRemainingDebt = customers.reduce((sum, c) => sum + c.balance, 0);
     const totalCostOfGoods = validSales.reduce((sum, s) => sum + s.costOfGoods, 0);
-    const grossProfit = validSales.reduce((sum, s) => sum + s.grossProfit, 0);
+    const grossProfit = validSales.reduce(
+      (sum, s) => sum + s.grossProfit - businessDeliveryCost(s),
+      0,
+    );
 
     const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
     const totalIncome = incomes.reduce((sum, i) => sum + i.amount, 0);

@@ -187,6 +187,8 @@ export interface Sale {
   subtotal: number;
   discount: number;
   deliveryFee: number;
+  deliveryFeePayer?: "Customer" | "Business";
+  deliveryRate?: number;
   grandTotal: number;
   costOfGoods: number;
   grossProfit: number;
