@@ -12,10 +12,10 @@ interface NewExpenseModalProps {
 export const NewExpenseModal: React.FC<NewExpenseModalProps> = ({ isOpen, onClose }) => {
   const { accounts, addAccount, addExpense, currentUser, products } = useStore();
   const [adProductId, setAdProductId] = useState<string>("");
-  const isAds = category === "Facebook Ads";
 
   const [isPettyCash, setIsPettyCash] = useState<boolean>(true);
   const [category, setCategory] = useState<string>("Transportation");
+  const isAds = category === "Facebook Ads";
   const [customExpenseName, setCustomExpenseName] = useState<string>("");
   const [title, setTitle] = useState<string>("");
   const [amount, setAmount] = useState<string>("");
