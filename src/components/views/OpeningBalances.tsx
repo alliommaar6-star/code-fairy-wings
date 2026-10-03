@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import { Wallet, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useStore } from "@/context/StoreContext";
@@ -12,7 +12,7 @@ export function OpeningBalances() {
   const [entries, setEntries] = useState<Entry[]>([blank()]);
   const [error, setError] = useState("");
   const update = (index: number, patch: Partial<Entry>) => setEntries(prev => prev.map((row, i) => i === index ? { ...row, ...patch } : row));
-  const submit = (event: React.FormEvent) => {
+  const submit = (event: FormEvent) => {
     event.preventDefault();
     if (entries.some(e => !Number.isFinite(Number(e.balance)) || Number(e.balance) < 0 || e.balance.trim() === "" || (e.kind === "Bank" && (!e.bank.trim() || !e.holder.trim() || !e.number.trim() || !e.phone.trim())) || ((e.kind === "EVC Plus" || e.kind === "e-Dahab") && !e.number.trim()))) {
       setError("Buuxi lacagta iyo xogta akoon kasta; lacagtu ma noqon karto mid taban.");

@@ -124,7 +124,7 @@ export const SuperAdminView: React.FC = () => {
       alert('Fadlan si sax ah u qor "RESET" si aad u xaqiijiso.');
       return;
     }
-    const success = factoryReset("RESET", "Owner");
+    const success = factoryReset("RESET");
     if (success) {
       setShowResetConfirm(false);
       setResetConfirmation("");

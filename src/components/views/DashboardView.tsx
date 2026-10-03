@@ -33,7 +33,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate, onOpen
   const branches = useBranches();
   const role = useStaffRole();
   const [range, setRange] = useState<DateRange>(() => ({ from: new Date(), to: new Date() }));
-  const [comparisonDays, setComparisonDays] = useState(16);
+  const [comparisonDays, setComparisonDays] = useState(1);
   const [activityQuery, setActivityQuery] = useState('');
   const [activityType, setActivityType] = useState('all');
   const [activityLimit, setActivityLimit] = useState(25);
@@ -67,10 +67,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate, onOpen
     };
     const showMain = branchFilter === 'all' || branchFilter === 'main';
     if (showMain) {
-      sales.filter(s => s.status === 'Completed').forEach(s => { add(s.date, 'sales', s.grandTotal); add(s.date, 'gross', s.grossProfit - businessDeliveryCost(s)); });
+      sales.filter(s => s.status === 'Completed').forEach(s => { add(s.date, 'sales', s.grandTotal); add(s.date, 'gross', s.grossProfit); add(s.date, 'expenses', businessDeliveryCost(s)); });
       orders.filter(o => o.status === 'delivered' && !o.convertedSaleId).forEach(o => {
         add(o.date, 'sales', o.total);
-        add(o.date, 'gross', o.total - o.items.reduce((sum, item) => sum + (item.costPrice || 0) * item.quantity, 0) - businessDeliveryCost(o));
+        add(o.date, 'gross', o.total - o.items.reduce((sum, item) => sum + (item.costPrice || 0) * item.quantity, 0));
+        add(o.date, 'expenses', businessDeliveryCost(o));
       });
     }
     branches.sales.filter(s => branchFilter === 'all' || s.branchId === branchFilter).forEach(s => { add(s.date, 'sales', s.total); add(s.date, 'gross', s.total - s.cost - s.commission); });
@@ -84,6 +85,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate, onOpen
   const current = compute(start, end);
   const compared = compute(comparisonStart, comparisonEnd);
   const previous = compute(prevStart, prevEnd);
+  const comparisonNow = comparisonDays === 1 ? compute(comparisonEnd, comparisonEnd) : compared;
+  const comparisonBefore = comparisonDays === 1 ? compute(prevEnd, prevEnd) : previous;
   const byDay = current.map;
   const performanceData = eachDayOfInterval({ start: parseISO(start), end: parseISO(end) }).map(d => {
     const key = format(d, 'yyyy-MM-dd');
@@ -94,14 +97,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate, onOpen
   const periodNetProfit = current.net;
   const fmtLabel = (a: string, b: string) => a === b ? format(parseISO(a), 'MMM d, yyyy') : `${format(parseISO(a), 'MMM d, yyyy')} – ${format(parseISO(b), 'MMM d, yyyy')}`;
   const periodLabel = fmtLabel(start, end);
-  const comparedLabel = fmtLabel(comparisonStart, comparisonEnd);
-  const prevLabel = fmtLabel(prevStart, prevEnd);
+  const comparedLabel = comparisonDays === 1 ? fmtLabel(comparisonEnd, comparisonEnd) : fmtLabel(comparisonStart, comparisonEnd);
+  const prevLabel = comparisonDays === 1 ? fmtLabel(prevEnd, prevEnd) : fmtLabel(prevStart, prevEnd);
   const branchName = branchFilter === 'all' ? 'All (store + branches)' : branchFilter === 'main' ? 'Main store' : branches.branches.find(b => b.id === branchFilter)?.name ?? 'Branch';
   const comparison = [
-    { label: 'Sales', now: compared.total.sales, before: previous.total.sales },
-    { label: 'Gross profit', now: compared.total.gross, before: previous.total.gross },
-    { label: 'Expenses', now: compared.total.expenses, before: previous.total.expenses, inverse: true },
-    { label: 'Net profit', now: compared.net, before: previous.net },
+    { label: 'Sales', now: comparisonNow.total.sales, before: comparisonBefore.total.sales },
+    { label: 'Gross profit', now: comparisonNow.total.gross, before: comparisonBefore.total.gross },
+    { label: 'Expenses', now: comparisonNow.total.expenses, before: comparisonBefore.total.expenses, inverse: true },
+    { label: 'Net profit', now: comparisonNow.net, before: comparisonBefore.net },
   ];
   const pct = (now: number, before: number) => before === 0 ? (now === 0 ? 0 : null) : ((now - before) / Math.abs(before)) * 100;
   const branchRows = [
@@ -113,12 +116,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate, onOpen
   const fileBase = `benadir-report-${start}_${end}`;
   const exportCSV = () => {
     const esc = (v: string | number) => `"${String(v).replace(/"/g, '""')}"`;
-    const safe = (v: string | number) => { const s = String(v); return esc(/^[\s]*[=+@\-]/.test(s) ? `'${s}` : s); };
+    const safe = (v: string | number) => { const s = String(v); return esc(/^[\s]*[=+@\-]/.test(s) && !/^-\d+(?:\.\d+)?$/.test(s) ? `'${s}` : s); };
     const lines = [
       ['Benadir Store - Sales & Profit Report'], ['Period', periodLabel], ['Comparison', `${comparedLabel} vs ${prevLabel}`], ['Filter', branchName], [],
       ['DASHBOARD KPIs', 'Value'],
       ...metrics.map(m => [m.label, m.value.toFixed(2)]),
-      ['Today net profit', todayNetProfit.toFixed(2)], ['Month net profit', monthProfit.toFixed(2)], ['Year net profit', pYearC.net.toFixed(2)], ['All-time net profit', allTimeProfit.toFixed(2)],
+      ['Today net profit', pTodayC.net.toFixed(2)], ['Month net profit', pMonthC.net.toFixed(2)], ['Year net profit', pYearC.net.toFixed(2)], ['All-time net profit', allTimeProfit.toFixed(2)],
       ...tgtRows.flatMap(r => [[`${r.label} target`, r.target.toFixed(2)], [`${r.label} net profit`, r.net.toFixed(2)], [`${r.label} difference`, (r.net - r.target).toFixed(2)]]), [],
       ['Date', 'Sales', 'Gross profit', 'Other income', 'Expenses', 'Net profit'],
       ...performanceData.map(d => [d.fullDate, d.sales.toFixed(2), d.gross.toFixed(2), d.income.toFixed(2), d.expenses.toFixed(2), d.profit.toFixed(2)]),
@@ -127,7 +130,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate, onOpen
       ...comparison.map(c => { const p = pct(c.now, c.before); return [c.label, c.now.toFixed(2), c.before.toFixed(2), p === null ? 'new' : p.toFixed(1)]; }),
       [], ['Branch', 'Sales count', 'Sales', 'Commission', 'Profit'],
       ...branchRows.map(r => [r.name, r.count, r.sales.toFixed(2), r.commission.toFixed(2), r.profit.toFixed(2)]),
-      [], ['BUSINESS ACTIVITY', `Date: ${activityFrom || start} to ${activityTo || end}`, `Type: ${activityType}`, `Search: ${activityQuery}`],
+      [], ['BUSINESS ACTIVITY', `Date: ${activityFrom || 'Any'} to ${activityTo || 'Any'}`, `Type: ${activityType}`, `Search: ${activityQuery}`],
       ['Date / time', 'Event type', 'Reference', 'Details', 'Amount', 'Section'],
       ...visibleActivity.map(a => [a.date, a.type, a.title, a.detail, a.amount ?? '', a.section]),
     ];
@@ -180,10 +183,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate, onOpen
   ];
   type Activity = { id: string; date: string; type: string; title: string; detail: string; amount?: number; section: NavSection };
   const activity: Activity[] = [];
-  const addActivity = (row: Activity) => { if (canAccess(role, row.section) && row.date.slice(0, 10) >= (activityFrom || start) && row.date.slice(0, 10) <= (activityTo || end)) activity.push(row); };
+  const addActivity = (row: Activity) => { if (canAccess(role, row.section) && (!activityFrom || row.date.slice(0, 10) >= activityFrom) && (!activityTo || row.date.slice(0, 10) <= activityTo)) activity.push(row); };
   if (branchFilter === 'all' || branchFilter === 'main') {
     sales.forEach(s => addActivity({ id: `sale-${s.id}`, date: `${s.date} ${s.time || ''}`, type: 'Sale', title: s.invoiceNo, detail: `${s.customerName} · ${s.status} · ${s.items.map(i => `${i.productName} ×${i.quantity}`).join(', ')} · Paid ${money(s.amountPaid)} · Profit ${money(s.grossProfit - businessDeliveryCost(s))}`, amount: s.grandTotal, section: 'sales' }));
     orders.forEach(o => addActivity({ id: `order-${o.id}`, date: `${o.date} ${o.time || ''}`, type: 'Order', title: o.orderNo, detail: `${o.customerName} · ${o.status} · ${o.items.map(i => `${i.productName} ×${i.quantity}`).join(', ')} · Paid ${money(o.paidAmount)}`, amount: o.total, section: 'sales' }));
+    sales.filter(s => s.status === 'Completed' && businessDeliveryCost(s) > 0).forEach(s => addActivity({ id: `delivery-cost-sale-${s.id}`, date: `${s.date} ${s.time || ''}`, type: 'Delivery expense', title: s.invoiceNo, detail: `Business-paid delivery · ${s.customerName}`, amount: -businessDeliveryCost(s), section: 'sales' }));
+    orders.filter(o => o.status === 'delivered' && !o.convertedSaleId && businessDeliveryCost(o) > 0).forEach(o => addActivity({ id: `delivery-cost-order-${o.id}`, date: `${o.date} ${o.time || ''}`, type: 'Delivery expense', title: o.orderNo, detail: `Business-paid delivery · ${o.customerName}`, amount: -businessDeliveryCost(o), section: 'sales' }));
   }
   branches.sales.filter(s => branchFilter === 'all' || s.branchId === branchFilter).forEach(s => addActivity({ id: `branch-sale-${s.id}`, date: `${s.date} ${s.time || ''}`, type: 'Branch sale', title: s.branchName, detail: `${s.items.map(i => `${i.productName} ×${i.quantity}`).join(', ')} · Commission ${money(s.commission)} · Profit ${money(s.total - s.cost - s.commission)} · ${s.managerName || 'Branch Admin —'}`, amount: s.total, section: 'branches' }));
   branches.transfers.filter(t => branchFilter === 'all' || t.branchId === branchFilter).forEach(t => addActivity({ id: `branch-transfer-${t.id}`, date: t.date, type: 'Branch stock', title: t.productName, detail: `${branches.branches.find(b => b.id === t.branchId)?.name || 'Branch'} · ${t.quantity} units transferred`, section: 'branches' }));
@@ -211,7 +216,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate, onOpen
     { id: 'kpi-total-income', label: 'Other Income', value: period.income, note: 'Services & other income', icon: TrendingUp, to: 'income' as NavSection, tone: 'teal' },
     { id: 'kpi-total-expenses', label: 'Expenses', value: period.expenses, note: 'Operating costs', icon: TrendingDown, to: 'expenses' as NavSection, tone: 'clay' },
     { id: 'kpi-net-profit', label: 'Gross Profit', value: period.gross, note: 'After cost & commissions', icon: DollarSign, to: 'reports' as NavSection, tone: 'mint' },
-    { id: 'kpi-cash-in-hand', label: 'Cash in Hand', value: totalCashInHand, note: 'Drawer & accounts', icon: Wallet, to: 'accounts' as NavSection, tone: 'teal' },
     { id: 'kpi-receivables-debt', label: 'Receivables', value: totalRemainingDebt, note: 'Customer credit', icon: Users, to: 'customers' as NavSection, tone: 'clay' },
     { id: 'kpi-stock-valuation', label: 'Stock Value', value: totalStockValueSelling, note: `${products.length} active products`, icon: Package, to: 'inventory' as NavSection, tone: 'mint' },
   ];
@@ -226,7 +230,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate, onOpen
     { label: 'Transfer', icon: Wallet, action: onOpenNewAccount },
   ];
   const assets = [
-    { name: 'Cash in Hand', value: totalCashInHand, color: 'var(--dash-mint)' },
+    { name: 'Cash in Hand', value: balanceVisible ? totalCashInHand : 0, color: 'var(--dash-mint)' },
     { name: 'Receivables', value: totalRemainingDebt, color: 'var(--dash-clay)' },
     { name: 'Stock Value', value: totalStockValueSelling, color: 'var(--dash-forest)' },
   ];
@@ -278,7 +282,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate, onOpen
         {branchFilter !== 'all' && <p className="-mt-3 text-[11px] text-muted-foreground">Other income & expenses are counted only under “All”.</p>}
 
         <section aria-label="Period comparison" className="dashboard-panel border border-border bg-card p-4 sm:p-5">
-          <div className="mb-3 flex flex-wrap items-center justify-between gap-2"><div><h2 className="dashboard-heading text-base font-semibold text-foreground">Compared with previous period</h2><p className="text-xs text-muted-foreground">{comparedLabel} vs {prevLabel} · {branchName}</p></div><label className="text-xs text-muted-foreground">Comparison <select aria-label="Comparison days" value={comparisonDays} onChange={e => setComparisonDays(Number(e.target.value))} className="ml-2 h-9 rounded border border-border bg-card px-2 text-foreground"><option value={16}>16 days</option><option value={7}>7 days</option><option value={30}>30 days</option><option value={lengthDays}>Selected range ({lengthDays} days)</option></select></label></div>
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2"><div><h2 className="dashboard-heading text-base font-semibold text-foreground">Compared with previous period</h2><p className="text-xs text-muted-foreground">{comparedLabel} vs {prevLabel} · {branchName}</p></div><label className="text-xs text-muted-foreground">Comparison <select aria-label="Comparison days" value={comparisonDays} onChange={e => setComparisonDays(Number(e.target.value))} className="ml-2 h-9 rounded border border-border bg-card px-2 text-foreground"><option value={1}>Today vs yesterday</option><option value={16}>16 days</option><option value={7}>7 days</option><option value={30}>30 days</option>{lengthDays !== 1 && <option value={lengthDays}>Selected range ({lengthDays} days)</option>}</select></label></div>
           <div className="grid grid-cols-2 gap-2 md:grid-cols-4">{comparison.map(c => { const p = pct(c.now, c.before); const good = p === null ? true : c.inverse ? p <= 0 : p >= 0; return (
             <div key={c.label} className="border border-border p-3"><div className="dashboard-kicker text-muted-foreground">{c.label}</div><div className="dashboard-heading mt-1 text-lg font-semibold text-foreground">{money(c.now)}</div><div className="mt-1 flex items-center justify-between text-[11px]"><span className="text-muted-foreground">Before {money(c.before)}</span><strong className={good ? 'text-primary' : 'text-destructive'}>{p === null ? 'new' : `${p >= 0 ? '+' : ''}${p.toFixed(1)}%`}</strong></div></div>
           ); })}</div>
@@ -299,8 +303,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate, onOpen
             </label>
           </div>
           <Button id="kpi-today-target" variant="ghost" onClick={() => onNavigate('targets')} className="dashboard-feature dashboard-feature-target group flex h-auto min-h-[228px] flex-col items-start justify-between whitespace-normal border border-border p-5 text-left hover:bg-accent sm:p-6">
-            <div className="flex w-full items-center justify-between"><span className="dashboard-kicker text-muted-foreground">TODAY'S TARGET · {todayNetProfit >= todayTarget ? 'DHEERI' : 'DHIMAN'}</span><Target className="h-5 w-5 text-[var(--dash-clay)]" /></div>
-            <div className="w-full"><div className={`dashboard-heading break-all text-3xl font-bold sm:text-4xl ${todayNetProfit >= todayTarget ? 'text-positive' : 'text-destructive'}`}>{todayNetProfit >= todayTarget ? '+' : '-'}{money(Math.abs(todayNetProfit - todayTarget))}</div><p className="mt-2 text-xs font-medium text-muted-foreground">Target {money(todayTarget)} − Net profit {money(todayNetProfit)}</p><div className="mt-3 h-1 w-full bg-muted"><div className="h-full bg-[var(--dash-forest)] transition-[width] duration-500" style={{ width: `${targetProgressPct}%` }} /></div></div>
+            <div className="flex w-full items-center justify-between"><span className="dashboard-kicker text-muted-foreground">TODAY'S TARGET · {todayNetProfit > todayTarget ? 'DHEERI' : todayNetProfit < todayTarget ? 'DHIMAN' : 'LA GAARAY'}</span><Target className="h-5 w-5 text-[var(--dash-clay)]" /></div>
+            <div className="w-full"><div className={`dashboard-heading break-all text-3xl font-bold sm:text-4xl ${todayNetProfit > todayTarget ? 'text-positive' : todayNetProfit < todayTarget ? 'text-destructive' : 'text-foreground'}`}>{todayNetProfit > todayTarget ? '+' : todayNetProfit < todayTarget ? '-' : ''}{money(Math.abs(todayNetProfit - todayTarget))}</div><p className="mt-2 text-xs font-medium text-muted-foreground">Target {money(todayTarget)} − Net profit {money(todayNetProfit)}</p><div className="mt-3 h-1 w-full bg-muted"><div className="h-full bg-[var(--dash-forest)] transition-[width] duration-500" style={{ width: `${targetProgressPct}%` }} /></div></div>
           </Button>
           <div className="dashboard-feature dashboard-feature-summary flex min-h-[172px] flex-col justify-between border border-border p-5 sm:p-6"><span className="dashboard-kicker text-muted-foreground">SELECTED PERIOD</span><div className="space-y-2 text-sm"><div className="flex items-center justify-between border-b border-border pb-2"><span className="text-muted-foreground">Sales</span><strong className="font-semibold text-foreground">{money(period.sales)}</strong></div><div className="flex items-center justify-between border-b border-border pb-2"><span className="text-muted-foreground">Gross profit</span><strong className="font-semibold text-foreground">{money(period.gross)}</strong></div><div className="flex items-center justify-between"><span className="text-muted-foreground">Expenses</span><strong className="font-semibold text-[var(--dash-clay)]">{money(period.expenses)}</strong></div></div></div>
         </section>
@@ -318,10 +322,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate, onOpen
           ); })}
         </section>
 
-        <section aria-label="Targets" className="grid grid-cols-1 gap-2 md:grid-cols-3">
+        <section aria-label="Targets" className="grid grid-cols-1 gap-2 md:grid-cols-[1.6fr_1fr_1fr]">
           {tgtRows.map(r => { const remaining = Math.max(0, r.target - r.net); const extra = Math.max(0, r.net - r.target); return (
-            <div key={r.label} id={`kpi-target-${r.label.toLowerCase()}`} className="border border-border bg-card p-3.5">
-              <div className="flex items-center justify-between"><span className="dashboard-kicker text-muted-foreground">{r.label} target</span><Target className="h-4 w-4 text-[var(--dash-clay)]" /></div>
+            <div key={r.label} id={`kpi-target-${r.label.toLowerCase()}`} className={`border border-border bg-card p-3.5 ${r.label === 'Daily' ? 'border-primary p-5' : ''}`}>
+              <div className="flex items-center justify-between"><span className="dashboard-kicker text-muted-foreground">{r.label === 'Daily' ? 'Today' : r.label} target</span><Target className="h-4 w-4 text-[var(--dash-clay)]" /></div>
+              {r.label === 'Daily' && <strong className={`mt-2 block text-3xl font-bold sm:text-4xl ${extra > 0 ? 'text-positive' : remaining > 0 ? 'text-destructive' : 'text-foreground'}`}>{extra > 0 ? '+' : remaining > 0 ? '-' : ''}{money(extra > 0 ? extra : remaining)}</strong>}
               <div className="mt-2 space-y-1 text-xs">
                 <div className="flex justify-between"><span className="text-muted-foreground">Target</span><strong className="text-foreground">{money(r.target)}</strong></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Net profit</span><strong className="text-foreground">{money(r.net)}</strong></div>
@@ -345,13 +350,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate, onOpen
 
         <section className="grid gap-4 lg:grid-cols-[minmax(0,1.7fr)_minmax(270px,1fr)]">
           <div className="dashboard-panel min-w-0 border border-border bg-card p-4 sm:p-5"><div className="mb-5 flex flex-wrap items-start justify-between gap-2"><div><h2 className="dashboard-heading text-base font-semibold text-foreground">Daily sales & net profit</h2><p className="text-xs text-muted-foreground">{periodLabel} · Completed sales, orders & branches</p></div><div className="flex gap-3 text-[11px] font-medium text-muted-foreground"><span className="flex items-center gap-1.5"><i className="h-2 w-2 rounded-full bg-[var(--dash-forest)]" />Sales</span><span className="flex items-center gap-1.5"><i className="h-2 w-2 rounded-full bg-[var(--dash-clay)]" />Net profit</span></div></div><div className="h-56 w-full"><ResponsiveContainer width="100%" height="100%"><AreaChart data={performanceData} margin={{ top: 8, right: 8, left: -23, bottom: 0 }}><CartesianGrid stroke="var(--dash-line)" strokeDasharray="3 4" vertical={false} /><XAxis dataKey="date" tick={{ fontSize: 10, fill: 'var(--dash-subtle)' }} axisLine={false} tickLine={false} minTickGap={15} /><YAxis tick={{ fontSize: 10, fill: 'var(--dash-subtle)' }} axisLine={false} tickLine={false} tickFormatter={v => `$${v}`} /><Tooltip labelFormatter={(_, payload) => payload?.[0]?.payload?.fullDate ?? ''} contentStyle={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)', color: 'var(--foreground)', borderRadius: 4, fontSize: 12 }} formatter={(value: number) => money(value)} /><Area name="Sales" type="monotone" dataKey="sales" stroke="var(--dash-forest)" strokeWidth={2} fill="var(--dash-forest)" fillOpacity={0.08} /><Area name="Net profit" type="monotone" dataKey="profit" stroke="var(--dash-clay)" strokeWidth={2} fill="var(--dash-clay)" fillOpacity={0.04} /></AreaChart></ResponsiveContainer></div></div>
-          <div className="dashboard-panel border border-border bg-card p-4 sm:p-5"><h2 className="dashboard-heading text-base font-semibold text-foreground">Financial position</h2><p className="text-xs text-muted-foreground">Cash, credit & stock at retail value</p><div className="relative mx-auto mt-3 h-36 w-full"><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={hasAssets ? assets : [{ name: 'No assets', value: 1, color: 'var(--muted)' }]} dataKey="value" innerRadius={49} outerRadius={65} stroke="var(--card)" strokeWidth={3}>{(hasAssets ? assets : [{ name: 'No assets', value: 1, color: 'var(--muted)' }]).map(x => <Cell key={x.name} fill={x.color} />)}</Pie><Tooltip formatter={(value: number) => money(hasAssets ? value : 0)} /></PieChart></ResponsiveContainer><div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center"><span className="dashboard-kicker text-muted-foreground">TOTAL ASSETS</span><strong className="dashboard-heading text-lg text-foreground">{money(pool)}</strong></div></div><div className="mt-2 divide-y divide-border">{assets.map(x => <div key={x.name} className="flex items-center justify-between py-2 text-xs"><span className="text-muted-foreground">{x.name}</span><strong className="text-foreground">{money(x.value)}</strong></div>)}</div></div>
+          <div className="dashboard-panel border border-border bg-card p-4 sm:p-5"><h2 className="dashboard-heading text-base font-semibold text-foreground">Financial position</h2><p className="text-xs text-muted-foreground">Cash, credit & stock at retail value</p><div className="relative mx-auto mt-3 h-36 w-full"><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={hasAssets ? assets : [{ name: 'No assets', value: 1, color: 'var(--muted)' }]} dataKey="value" innerRadius={49} outerRadius={65} stroke="var(--card)" strokeWidth={3}>{(hasAssets ? assets : [{ name: 'No assets', value: 1, color: 'var(--muted)' }]).map(x => <Cell key={x.name} fill={x.color} />)}</Pie><Tooltip formatter={(value: number) => money(hasAssets ? value : 0)} /></PieChart></ResponsiveContainer><div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center"><span className="dashboard-kicker text-muted-foreground">TOTAL ASSETS</span><strong className="dashboard-heading text-lg text-foreground">{balanceVisible ? money(pool) : '••••••'}</strong></div></div><div className="mt-2 divide-y divide-border">{assets.map(x => <div key={x.name} className="flex items-center justify-between py-2 text-xs"><span className="text-muted-foreground">{x.name}</span><strong className="text-foreground">{x.name === 'Cash in Hand' && !balanceVisible ? '••••••' : money(x.value)}</strong></div>)}</div></div>
         </section>
 
         {branchRows.length > 0 && <section aria-label="Branch performance" className="dashboard-panel border border-border bg-card p-4 sm:p-5"><h2 className="dashboard-heading text-base font-semibold text-foreground">Sales & profit by branch</h2><p className="mb-3 text-xs text-muted-foreground">{periodLabel}</p><div className="overflow-x-auto"><table className="w-full text-xs"><thead><tr className="border-b border-border text-left text-muted-foreground"><th className="py-2">Branch</th><th className="py-2 text-right">Sales #</th><th className="py-2 text-right">Sales</th><th className="py-2 text-right">Commission</th><th className="py-2 text-right">Profit</th></tr></thead><tbody className="divide-y divide-border">{branchRows.map(r => <tr key={r.id} onClick={() => setBranchFilter(r.id)} className={`cursor-pointer hover:bg-accent ${branchFilter === r.id ? 'bg-accent' : ''}`}><td className="py-2 font-semibold text-foreground">{r.name}</td><td className="py-2 text-right">{r.count}</td><td className="py-2 text-right">{money(r.sales)}</td><td className="py-2 text-right">{money(r.commission)}</td><td className="py-2 text-right font-semibold text-foreground">{money(r.profit)}</td></tr>)}</tbody></table></div></section>}
 
         <section aria-label="Business activity" className="dashboard-panel border border-border bg-card p-4 sm:p-5">
-          <div className="mb-4 flex flex-wrap items-start justify-between gap-3"><div><h2 className="dashboard-heading text-base font-semibold text-foreground">Business activity</h2><p className="text-xs text-muted-foreground">{activityFrom || start} – {activityTo || end} · {branchName} · {visibleActivity.length} events</p></div><div className="flex flex-wrap gap-2"><input aria-label="Search business activity" placeholder="Search activity…" value={activityQuery} onChange={e => { setActivityQuery(e.target.value); setActivityLimit(25); }} className="h-9 min-w-0 max-w-full rounded border border-border bg-background px-3 text-xs text-foreground" /><input aria-label="Activity start date" type="date" value={activityFrom || start} onChange={e => { setActivityFrom(e.target.value); setActivityLimit(25); }} className="h-9 rounded border border-border bg-background px-2 text-xs text-foreground" /><input aria-label="Activity end date" type="date" value={activityTo || end} onChange={e => { setActivityTo(e.target.value); setActivityLimit(25); }} className="h-9 rounded border border-border bg-background px-2 text-xs text-foreground" /><select aria-label="Activity type" value={activityType} onChange={e => { setActivityType(e.target.value); setActivityLimit(25); }} className="h-9 rounded border border-border bg-background px-2 text-xs text-foreground"><option value="all">All events</option>{activityTypes.map(type => <option key={type} value={type}>{type}</option>)}</select></div></div>
+          <div className="mb-4 flex flex-wrap items-start justify-between gap-3"><div><h2 className="dashboard-heading text-base font-semibold text-foreground">Business activity</h2><p className="text-xs text-muted-foreground">{activityFrom || 'All dates'} – {activityTo || 'Today'} · {branchName} · {visibleActivity.length} events</p></div><div className="flex flex-wrap gap-2"><input aria-label="Search business activity" placeholder="Search activity…" value={activityQuery} onChange={e => { setActivityQuery(e.target.value); setActivityLimit(25); }} className="h-9 min-w-0 max-w-full rounded border border-border bg-background px-3 text-xs text-foreground" /><input aria-label="Activity start date" type="date" value={activityFrom} onChange={e => { setActivityFrom(e.target.value); setActivityLimit(25); }} className="h-9 rounded border border-border bg-background px-2 text-xs text-foreground" /><input aria-label="Activity end date" type="date" value={activityTo} onChange={e => { setActivityTo(e.target.value); setActivityLimit(25); }} className="h-9 rounded border border-border bg-background px-2 text-xs text-foreground" /><select aria-label="Activity type" value={activityType} onChange={e => { setActivityType(e.target.value); setActivityLimit(25); }} className="h-9 rounded border border-border bg-background px-2 text-xs text-foreground"><option value="all">All events</option>{activityTypes.map(type => <option key={type} value={type}>{type}</option>)}</select></div></div>
           {visibleActivity.length === 0 ? <p className="border-t border-border py-8 text-center text-sm text-muted-foreground">No matching activity in this period.</p> : <div className="divide-y divide-border border-t border-border">{visibleActivity.slice(0, activityLimit).map(a => <div key={a.id} className="flex flex-wrap items-start justify-between gap-2 py-3 text-xs sm:flex-nowrap"><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><span className="dashboard-kicker text-primary">{a.type}</span><span className="text-muted-foreground">{a.date}</span></div><div className="mt-1 font-semibold text-foreground">{a.title}</div><p className="mt-0.5 break-words text-muted-foreground">{a.detail}</p></div><div className="flex shrink-0 items-center gap-2">{a.amount !== undefined && <strong className={a.amount < 0 ? 'text-destructive' : 'text-foreground'}>{money(a.amount)}</strong>}<Button variant="ghost" size="icon" aria-label={`View details for ${a.type} ${a.title}`} title="View details" className="h-7 w-7" onClick={() => setSelectedActivity(a.id)}><ChevronRight className="h-4 w-4" /></Button></div></div>)}</div>}
           {visibleActivity.length > activityLimit && <div className="pt-4 text-center"><Button variant="outline" size="sm" onClick={() => setActivityLimit(n => n + 25)}>Show more ({visibleActivity.length - activityLimit} remaining)</Button></div>}
         </section>

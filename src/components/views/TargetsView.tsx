@@ -38,6 +38,7 @@ export const TargetsView: React.FC = () => {
       ? Math.min(100, Math.max(0, Math.round((cycle.totalAchievement / cycle.burden) * 100)))
       : 0;
   const remainingToday = t ? Math.max(0, t.adjustedTarget - t.achievement) : 0;
+  const extraToday = t ? Math.max(0, t.achievement - t.adjustedTarget) : 0;
 
   const [base, setBase] = useState(String(fin.config.monthlyBaseTarget));
   const [rent, setRent] = useState(String(fin.config.rentAmount));
@@ -71,15 +72,13 @@ export const TargetsView: React.FC = () => {
         </p>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <StatCard
-          title="Today's Target"
-          value={money(t?.adjustedTarget ?? 0)}
-          subtitle={`Remaining ${money(remainingToday)}`}
-          icon={Target}
-          iconBg="bg-red-50"
-          iconColor="text-red-600"
-        />
+      <div className="grid grid-cols-1 gap-3 border border-border bg-card p-5 sm:p-6">
+        <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground"><Target className="h-5 w-5" /> Today's Target</div>
+        <strong className={`text-4xl font-bold sm:text-5xl ${extraToday > 0 ? 'text-positive' : remainingToday > 0 ? 'text-destructive' : 'text-foreground'}`}>{extraToday > 0 ? '+' : remainingToday > 0 ? '-' : ''}{money(extraToday > 0 ? extraToday : remainingToday)}</strong>
+        <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-foreground"><span>Target: {money(t?.adjustedTarget ?? 0)}</span><span>Net profit: {money(t?.achievement ?? 0)}</span><span>Remaining: {money(remainingToday)}</span><span>Dheeri: {money(extraToday)}</span></div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <StatCard
           title="Today's Net Profit"
           value={money(t?.achievement ?? 0)}
@@ -90,9 +89,9 @@ export const TargetsView: React.FC = () => {
           highlight={!!t && t.achievement >= t.adjustedTarget}
         />
         <StatCard
-          title="Tomorrow's Target"
-          value={money(engine.nextDayTarget)}
-          subtitle={`${engine.remainingCalendarDays} maalmood ayaa ka hadhay bisha`}
+          title="Weekly Target"
+          value={money(cycle?.days.filter(d => { const date = new Date(`${d.date}T12:00:00`); const start = new Date(`${today}T12:00:00`); start.setDate(start.getDate() - ((start.getDay() + 6) % 7)); return date >= start && d.date <= today; }).reduce((sum, d) => sum + d.adjustedTarget, 0) ?? 0)}
+          subtitle={`Net profit ${money(cycle?.days.filter(d => { const date = new Date(`${d.date}T12:00:00`); const start = new Date(`${today}T12:00:00`); start.setDate(start.getDate() - ((start.getDay() + 6) % 7)); return date >= start && d.date <= today; }).reduce((sum, d) => sum + d.achievement, 0) ?? 0)}`}
           icon={Clock}
           iconBg="bg-blue-50"
           iconColor="text-blue-600"

@@ -18,13 +18,13 @@ import {
 } from "lucide-react";
 import { useStore } from "../../context/StoreContext";
 import { SystemManagement } from "./SystemManagement";
+import { useStaffRole } from "@/lib/roles";
 
 export const SettingsView: React.FC = () => {
   const {
     settings,
     updateSettings,
     currentUser,
-    resetToDemoData,
     factoryReset,
     preResetBackup,
     restorePreResetBackup,
@@ -44,7 +44,7 @@ export const SettingsView: React.FC = () => {
   const [resetCompleted, setResetCompleted] = useState(false);
   const [resetError, setResetError] = useState("");
 
-  const isOwner = currentUser.role === "Owner";
+  const isOwner = useStaffRole() === "owner";
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,15 +78,6 @@ export const SettingsView: React.FC = () => {
       setResetConfirmText("");
     } else {
       setResetError("Factory reset failed. Please ensure you have Owner privileges.");
-    }
-  };
-
-  const handleResetDemoData = () => {
-    if (
-      confirm("Reload Benadir Store sample commercial demonstration catalogue and ledger data?")
-    ) {
-      resetToDemoData();
-      alert("Sample demonstration dataset loaded.");
     }
   };
 
@@ -251,9 +242,8 @@ export const SettingsView: React.FC = () => {
             <div className="space-y-1 text-xs">
               <p className="font-black text-emerald-950 text-sm">FACTORY RESET COMPLETE</p>
               <p>
-                All test and sample business data have been wiped clean. System schemas, roles,
-                configuration, and security foundations remain intact and ready for real production
-                commercial data.
+                Business records and account balances have been cleared. A restore point was saved.
+                Enter opening balances when the setup screen appears.
               </p>
             </div>
           </div>
@@ -266,12 +256,12 @@ export const SettingsView: React.FC = () => {
           </p>
           <ul className="list-disc pl-4 space-y-1 text-slate-500">
             <li>
-              <strong className="text-slate-700">Deletes:</strong> All sample products, orders,
-              sales, customer debt records, inventory movements, purchases, and expenses.
+              <strong className="text-slate-700">Clears:</strong> Products, orders, sales,
+              customer debt, branch stock, account balances, purchases, and expenses.
             </li>
             <li>
-              <strong className="text-slate-700">Preserves:</strong> Database schema, storage
-              architecture, accounts definitions, user roles (RBAC/RLS), and general configuration.
+              <strong className="text-slate-700">Preserves:</strong> Staff access and store settings;
+              a restore point is created before clearing business records.
             </li>
           </ul>
         </div>
@@ -341,19 +331,20 @@ export const SettingsView: React.FC = () => {
               <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs space-y-2">
                 <p className="font-bold flex items-center gap-1.5 text-amber-950">
                   <AlertTriangle className="w-4 h-4 text-amber-600" />
-                  Warning: Irreversible Business Data Deletion
+                  Warning: Business data will be cleared
                 </p>
                 <p>
                   You are about to purge all products, inventory ledgers, sales receipts, customer
                   debts, and transaction movements. System infrastructure, user accounts, and
-                  financial accounts definitions will be preserved.
+                  financial account balances will be cleared. A restore point will be kept; you will
+                  enter opening account details again.
                 </p>
               </div>
 
               {!isOwner ? (
                 <div className="p-4 rounded-xl bg-rose-100/70 border border-rose-300 text-rose-900 text-xs font-semibold">
                   Access Blocked: Your current user session role is{" "}
-                  <strong>{currentUser.role}</strong>. Only users with the <strong>Owner</strong>{" "}
+                  <strong>{isOwner ? "Owner" : "staff"}</strong>. Only users with the <strong>Owner</strong>{" "}
                   role can perform a factory reset.
                 </div>
               ) : (

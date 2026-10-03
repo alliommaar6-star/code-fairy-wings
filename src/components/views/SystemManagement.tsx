@@ -3,16 +3,7 @@ import { Database, Download, Upload, Cloud, ShieldCheck, Trash2, Activity, Histo
 import { useStore } from '../../context/StoreContext';
 import { supabase } from '@/integrations/supabase/client';
 import { getSyncStatus, subscribeSync, pendingCount, flush } from '@/lib/cloud-sync';
-import { normalizeRole, ROLE_LABELS } from '@/lib/roles';
-
-/** Business data keys cleared by Hard Reset (configuration such as settings, payment-account lists, delivery companies is kept). */
-const RESET_KEYS: Record<string, string> = {
-  benadir_products: '[]', benadir_inventory_movements: '[]', benadir_customers: '[]', benadir_suppliers: '[]',
-  benadir_supplier_payments: '[]', benadir_sales: '[]', benadir_orders: '[]', benadir_returns: '[]',
-  benadir_drivers: '[]', benadir_deliveries: '[]', benadir_transfers: '[]', benadir_expenses: '[]',
-  benadir_incomes: '[]', benadir_purchases: '[]', benadir_cargo: '[]', benadir_audit_logs: '[]',
-  benadir_tracking_v1: '{}', benadir_journal_manual_v1: '[]', benadir_ai_accountant_chat_v1: '[]',
-};
+import { normalizeRole, ROLE_LABELS, useStaffRole } from '@/lib/roles';
 
 const DATA_LABELS: [string, string][] = [
   ['benadir_products', 'Products'], ['benadir_customers', 'Customers'], ['benadir_suppliers', 'Suppliers'],
@@ -122,12 +113,13 @@ const StaffAndHistory: React.FC = () => {
 };
 
 export const SystemManagement: React.FC = () => {
-  const { currentUser, auditLogs } = useStore();
+  const { auditLogs, factoryReset } = useStore();
+  const staffRole = useStaffRole();
   const [, force] = useState(0);
   const [cloud, setCloud] = useState<{ rows: number; last: string | null; email: string | null } | null>(null);
   const [confirm, setConfirm] = useState('');
   const [busy, setBusy] = useState(false);
-  const isOwner = currentUser.role === 'Owner';
+  const isOwner = staffRole === 'owner';
 
   useEffect(() => { const off = subscribeSync(() => force((n) => n + 1)); return () => { off(); }; }, []);
   useEffect(() => {
@@ -169,12 +161,7 @@ export const SystemManagement: React.FC = () => {
     if (signedIn) {
       await supabase.from('app_state').upsert({ key: 'benadir__backup_before_hard_reset', value: { s: JSON.stringify(allKeys()) }, updated_at: new Date().toISOString() }, { onConflict: 'key' });
     }
-    for (const [k, v] of Object.entries(RESET_KEYS)) localStorage.setItem(k, v);
-    try {
-      const acc = JSON.parse(localStorage.getItem('benadir_accounts') || '[]');
-      localStorage.setItem('benadir_accounts', JSON.stringify(Array.isArray(acc) ? acc.map((a: { balance?: number }) => ({ ...a, balance: 0 })) : []));
-    } catch { /* ignore */ }
-    localStorage.setItem('benadir_factory_reset_done', 'true');
+    if (!factoryReset('RESET')) { setBusy(false); return; }
     await flush();
     window.location.reload();
   };
@@ -255,7 +242,7 @@ export const SystemManagement: React.FC = () => {
       <div className="bg-white rounded-2xl border-2 border-rose-300 p-5 space-y-3">
         <div className="flex items-center gap-2 font-extrabold text-rose-800"><AlertTriangle className="w-5 h-5" /> Hard Reset — Clear All Data</div>
         <p className="text-sm text-slate-700">
-          The only action that deletes data. Clears products, customers, suppliers, sales, orders, returns, purchases, expenses, incomes, stock movements, tracking, journal and history, and sets balances to 0 — on every device. Settings and account lists are kept. <b>No sample data is created afterwards.</b>
+          Clears business records, branch stock, journals, and payment balances, then asks for starting balances. A recovery copy is preserved; online changes sync to other devices after sign-in.
         </p>
         {!isOwner ? <p className="text-sm text-rose-700">Only the Owner can run a Hard Reset.</p> : (
           <div className="flex flex-col sm:flex-row gap-2">
