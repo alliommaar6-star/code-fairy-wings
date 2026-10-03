@@ -24,3 +24,6 @@
 - [x] Stock "hadiyad" (qof baa isiiyay, cost $0): option marka stock lagu daro main store (RestockProductModal) iyo branch transfer (BranchSalesPanel) — kharash/expense lama diiwaan gelinayo
 - [x] Tijaabada browser: Branch Admin field waa la xaqiijiyay (offline owner mode)
 - [x] Dashboard: business activity detail, daily/monthly/yearly/all-time net profit, signed target difference, 16-day comparison, Today default
+- [ ] Unify header/dashboard target difference; export dashboard KPIs and filtered activity CSV; searchable date/type-filtered activity details
+- [ ] Owner-confirmed complete business reset with backup and clean first-use opening balances for Cash/Bank/EVC/e-Dahab
+- [ ] Centered hidden balance display, PIN-revealed only for current view
