@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { useStore } from '../../context/StoreContext';
 import { canAccess, useStaffRole } from '@/lib/roles';
 
-export type NavSection = 'dashboard' | 'sales' | 'returns' | 'orders' | 'customers' | 'products' | 'inventory' | 'purchases' | 'suppliers' | 'delivery' | 'cargo' | 'tracking' | 'drivers' | 'payments' | 'accounts' | 'expenses' | 'income' | 'reports' | 'targets' | 'accounting' | 'insights' | 'users' | 'settings' | 'pos' | 'pettycash' | 'evcrecon';
+export type NavSection = 'dashboard' | 'sales' | 'returns' | 'orders' | 'customers' | 'products' | 'inventory' | 'purchases' | 'suppliers' | 'delivery' | 'cargo' | 'tracking' | 'drivers' | 'payments' | 'accounts' | 'expenses' | 'income' | 'reports' | 'targets' | 'accounting' | 'insights' | 'users' | 'settings' | 'pos' | 'pettycash' | 'evcrecon' | 'branches';
 export interface SidebarProps {
   activeTab?: NavSection;
   setActiveTab?: (tab: NavSection) => void;
@@ -25,6 +25,7 @@ const groups = [
     { id: 'inventory' as NavSection, label: 'Inventory', icon: Package },
     { id: 'purchases' as NavSection, label: 'Purchases', icon: ShoppingBag },
     { id: 'suppliers' as NavSection, label: 'Suppliers', icon: Building2 },
+    { id: 'branches' as NavSection, label: 'Branches & Stock', icon: Store },
     { id: 'delivery' as NavSection, label: 'Local Delivery', icon: Truck },
     { id: 'cargo' as NavSection, label: 'Cargo (Freight)', icon: Truck },
     { id: 'tracking' as NavSection, label: 'Tracking & Alerts', icon: MapPin },
