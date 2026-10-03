@@ -113,9 +113,9 @@ export const Header: React.FC<HeaderProps> = ({
           title="View Target Command Center"
         >
           <Target className="w-3.5 h-3.5 animate-pulse" />
-          <span className="hidden md:inline font-bold text-[11px] uppercase">Target left</span>
-          <span className="text-[11px] font-bold">${todayRemainingTarget.toFixed(2)}</span>
-          <span className="hidden xl:inline text-[11px] font-medium opacity-75">of ${todayTarget.toFixed(2)} · profit ${todayNetProfit.toFixed(2)}{todayNetProfit > todayTarget ? ` · dheeri +$${(todayNetProfit - todayTarget).toFixed(2)}` : ""}</span>
+          <span className="hidden md:inline font-bold text-[11px] uppercase">Today target</span>
+          <span className={`text-[11px] font-bold ${todayNetProfit >= todayTarget ? 'text-positive' : 'text-destructive'}`}>{todayNetProfit >= todayTarget ? '+' : '-'}${Math.abs(todayNetProfit - todayTarget).toFixed(2)}</span>
+          <span className="hidden xl:inline text-[11px] font-medium opacity-75">target ${todayTarget.toFixed(2)} · profit ${todayNetProfit.toFixed(2)}</span>
         </button>
 
         {/* Quick Add Dropdown */}
