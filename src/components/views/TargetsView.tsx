@@ -9,14 +9,14 @@ import {
   useFinEngine,
 } from "../../lib/financial-engine";
 import { buildDailyNetMap } from "../../lib/daily-net";
-import { useBranchStore } from "../../lib/branch-store";
+import { useBranches } from "../../lib/branch-store";
 
 const money = (n: number) => `$${(n || 0).toFixed(2)}`;
 
 export const TargetsView: React.FC = () => {
   const { sales, orders, expenses, incomes, currentUser } = useStore();
   const fin = useFinEngine();
-  const branchState = useBranchStore();
+  const branchState = useBranches();
   const today = new Date().toISOString().slice(0, 10);
 
   const engine = useMemo(
