@@ -9,6 +9,8 @@ import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import type { NavSection } from '../layout/Sidebar';
+import { computeEngine, useFinEngine } from '@/lib/financial-engine';
+import { buildDailyNetMap } from '@/lib/daily-net';
 
 interface DashboardViewProps {
   onNavigate: (tab: NavSection) => void;
@@ -119,6 +121,24 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate, onOpen
     setDraftRange(next);
     setRangeOpen(false);
   };
+  const fin = useFinEngine();
+  const todayKey = format(new Date(), 'yyyy-MM-dd');
+  const monthStart = todayKey.slice(0, 8) + '01';
+  const yearStart = todayKey.slice(0, 4) + '-01-01';
+  const weekStartDate = (() => { const d = new Date(); const dow = (d.getDay() + 6) % 7; return format(subDays(d, dow), 'yyyy-MM-dd'); })();
+  const pTodayC = compute(todayKey, todayKey), pMonthC = compute(monthStart, todayKey), pYearC = compute(yearStart, todayKey);
+  const tri = (k: 'sales' | 'gross' | 'income' | 'expenses' | 'net') => {
+    const g = (c: ReturnType<typeof compute>) => k === 'net' ? c.net : c.total[k];
+    return { today: g(pTodayC), month: g(pMonthC), year: g(pYearC) };
+  };
+  const engine = computeEngine(todayKey, fin.config, buildDailyNetMap(sales, orders, expenses, incomes));
+  const cycleDays = engine.activeCycle?.days ?? [];
+  const sumRange = (a: string, f: 'adjustedTarget' | 'achievement') => cycleDays.filter(d => d.date >= a && d.date <= todayKey).reduce((x, d) => x + d[f], 0);
+  const tgtRows = [
+    { label: 'Daily', target: engine.today?.adjustedTarget ?? 0, net: engine.today?.achievement ?? 0 },
+    { label: 'Weekly', target: sumRange(weekStartDate, 'adjustedTarget'), net: sumRange(weekStartDate, 'achievement') },
+    { label: 'Monthly', target: engine.activeCycle?.burden ?? 0, net: engine.activeCycle?.totalAchievement ?? 0 },
+  ];
   const recentSales = sales.filter(s => s.status === 'Completed' && s.date.slice(0, 10) >= start && s.date.slice(0, 10) <= end).slice(0, 4);
   const metrics = [
     { id: 'kpi-today-sales', label: 'Sales', value: period.sales, note: 'Completed sales & orders', icon: ShoppingCart, to: 'sales' as NavSection, tone: 'mint' },
@@ -200,9 +220,36 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate, onOpen
           </Button>
           <Button id="kpi-today-target" variant="ghost" onClick={() => onNavigate('targets')} className="dashboard-feature dashboard-feature-target group flex h-auto min-h-[172px] flex-col items-start justify-between whitespace-normal border border-border p-5 text-left hover:bg-accent sm:p-6">
             <div className="flex w-full items-center justify-between"><span className="dashboard-kicker text-muted-foreground">TODAY'S REMAINING TARGET</span><Target className="h-5 w-5 text-[var(--dash-clay)]" /></div>
-            <div className="w-full"><div className="dashboard-heading break-all text-3xl font-semibold text-foreground sm:text-4xl">{money(todayRemainingTarget)}</div><p className="mt-2 text-xs font-medium text-muted-foreground">Target {money(todayTarget)} − Net profit {money(todayNetProfit)}</p><div className="mt-3 h-1 w-full bg-muted"><div className="h-full bg-[var(--dash-forest)] transition-[width] duration-500" style={{ width: `${targetProgressPct}%` }} /></div></div>
+            <div className="w-full"><div className="dashboard-heading break-all text-3xl font-semibold text-foreground sm:text-4xl">{money(todayRemainingTarget)}</div><p className="mt-2 text-xs font-medium text-muted-foreground">Target {money(todayTarget)} − Net profit {money(todayNetProfit)}{todayNetProfit > todayTarget ? ` · Dheeri ${money(todayNetProfit - todayTarget)}` : ''}</p><div className="mt-3 h-1 w-full bg-muted"><div className="h-full bg-[var(--dash-forest)] transition-[width] duration-500" style={{ width: `${targetProgressPct}%` }} /></div></div>
           </Button>
           <div className="dashboard-feature dashboard-feature-summary flex min-h-[172px] flex-col justify-between border border-border p-5 sm:p-6"><span className="dashboard-kicker text-muted-foreground">SELECTED PERIOD</span><div className="space-y-2 text-sm"><div className="flex items-center justify-between border-b border-border pb-2"><span className="text-muted-foreground">Sales</span><strong className="font-semibold text-foreground">{money(period.sales)}</strong></div><div className="flex items-center justify-between border-b border-border pb-2"><span className="text-muted-foreground">Gross profit</span><strong className="font-semibold text-foreground">{money(period.gross)}</strong></div><div className="flex items-center justify-between"><span className="text-muted-foreground">Expenses</span><strong className="font-semibold text-[var(--dash-clay)]">{money(period.expenses)}</strong></div></div></div>
+        </section>
+
+        <section aria-label="Today month year" className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-5">
+          {([['Sales', 'sales'], ['Net Profit', 'net'], ['Gross Profit', 'gross'], ['Other Income', 'income'], ['Expenses', 'expenses']] as const).map(([label, k]) => { const v = tri(k); return (
+            <div key={k} id={`kpi-tri-${k}`} className="border border-border bg-card p-3.5">
+              <div className="dashboard-kicker text-muted-foreground">{label}</div>
+              <div className="mt-2 space-y-1 text-xs">
+                <div className="flex justify-between"><span className="text-muted-foreground">Maanta</span><strong className="text-foreground">{money(v.today)}</strong></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Bishan (1 – maanta)</span><strong className="text-foreground">{money(v.month)}</strong></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Sannadka (1/1 – maanta)</span><strong className="text-foreground">{money(v.year)}</strong></div>
+              </div>
+            </div>
+          ); })}
+        </section>
+
+        <section aria-label="Targets" className="grid grid-cols-1 gap-2 md:grid-cols-3">
+          {tgtRows.map(r => { const remaining = Math.max(0, r.target - r.net); const extra = Math.max(0, r.net - r.target); return (
+            <div key={r.label} id={`kpi-target-${r.label.toLowerCase()}`} className="border border-border bg-card p-3.5">
+              <div className="flex items-center justify-between"><span className="dashboard-kicker text-muted-foreground">{r.label} target</span><Target className="h-4 w-4 text-[var(--dash-clay)]" /></div>
+              <div className="mt-2 space-y-1 text-xs">
+                <div className="flex justify-between"><span className="text-muted-foreground">Target</span><strong className="text-foreground">{money(r.target)}</strong></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Net profit</span><strong className="text-foreground">{money(r.net)}</strong></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Remaining</span><strong className="text-destructive">{money(remaining)}</strong></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Dheeri (extra)</span><strong className="text-primary">{money(extra)}</strong></div>
+              </div>
+            </div>
+          ); })}
         </section>
 
         <section aria-label="Store metrics" className="dashboard-metric-grid grid grid-cols-2 gap-2 md:grid-cols-3 xl:grid-cols-4">
