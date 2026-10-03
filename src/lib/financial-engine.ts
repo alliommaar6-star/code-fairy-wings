@@ -280,12 +280,13 @@ export function computeEngine(
       const need = baseDaily + deficitCarry - surplusCarry;
       const adjusted = Math.max(0, need);
       surplusCarry = Math.max(0, -need); // leftover surplus after covering today
-      const ach = r2(dailyNet[date] || 0);
+      const ach = dailyNet[date] || 0;
       totalAchievement = r2(totalAchievement + ach);
-      const deficit = r2(Math.max(0, adjusted - ach));
-      const surplus = r2(Math.max(0, ach - adjusted));
+      // Keep full precision in the carry chain; round only for display.
+      const deficit = Math.max(0, adjusted - ach);
+      const surplus = Math.max(0, ach - adjusted);
       deficitCarry = deficit;
-      surplusCarry = r2(surplusCarry + surplus);
+      surplusCarry = surplusCarry + surplus;
       days.push({
         date,
         baseTarget: r2(baseDaily),
