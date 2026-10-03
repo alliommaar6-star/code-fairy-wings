@@ -41,7 +41,7 @@ export function calcPurchase(p: PurchaseCalcInput) {
 }
 
 /** Spread extra direct costs over items by value share → landed unit cost per item. */
-export function withLandedUnitCosts<T extends PurchaseItem>(p: PurchaseCalcInput & { items: T[] }): T[] {
+export function withLandedUnitCosts<T extends PurchaseItem>(p: PurchaseCalcInput & { items: T[] }): (T & { landedUnitCost: number })[] {
   const c = calcPurchase(p);
   const gross = p.items.reduce((s, i) => s + n(i.total), 0);
   const extra = c.landedCost - gross; // fees + cargo − discount
