@@ -291,9 +291,9 @@ export function computeEngine(
         date,
         baseTarget: r2(baseDaily),
         adjustedTarget: r2(adjusted),
-        achievement: ach,
-        deficit,
-        surplus,
+        achievement: r2(ach),
+        deficit: r2(deficit),
+        surplus: r2(surplus),
         deficitCarryAfter: r2(deficitCarry),
         surplusCarryAfter: r2(surplusCarry),
       });
