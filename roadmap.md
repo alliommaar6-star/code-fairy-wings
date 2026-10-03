@@ -13,3 +13,9 @@
 - [x] Financial Engine (targets core): daily target, deficit carry-forward, same-month surplus, petty cash, EVC reconciliation, double-entry (Grand Master prompt)
 - [x] Branches: ensure stock-to-branch recording by branch name is clear/visible in the system
 - [ ] Financial Engine: Petty Cash fund + EVC reconciliation screens (logic ready in financial-engine.ts)
+
+## New tasks (08:29 UTC)
+- [ ] Hide district/delivery-address select when NewOrderModal is in sale mode
+- [ ] Delivery Rate = business expense: not added to customer bill when business pays; deduct from net profit; show Product Sale Amount / Customer Payment / Delivery Expense / Net separately in sale/order UI
+- [ ] Build Petty Cash Fund page: record cash paid out, cash in, and box balance
+- [ ] Build EVC Plus reconciliation page: compare system records vs EVC balance
