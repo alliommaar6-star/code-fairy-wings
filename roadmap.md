@@ -12,7 +12,7 @@
 - [x] Dashboard: PDF/CSV export, previous-period comparison, per-branch filter
 - [x] Financial Engine (targets core): daily target, deficit carry-forward, same-month surplus, petty cash, EVC reconciliation, double-entry (Grand Master prompt)
 - [x] Branches: ensure stock-to-branch recording by branch name is clear/visible in the system
-- [ ] Financial Engine: Petty Cash fund + EVC reconciliation screens (logic ready in financial-engine.ts)
+- [x] Financial Engine: Petty Cash fund + EVC reconciliation screens
 
 ## New tasks (08:29 UTC)
 - [x] Hide district/delivery-address select when NewOrderModal is in sale mode
@@ -23,3 +23,4 @@
 - [ ] Connect GitHub API in new workspace (user re-requested after workspace move)
 - [x] Stock "hadiyad" (qof baa isiiyay, cost $0): option marka stock lagu daro main store (RestockProductModal) iyo branch transfer (BranchSalesPanel) — kharash/expense lama diiwaan gelinayo
 - [x] Tijaabada browser: Branch Admin field waa la xaqiijiyay (offline owner mode)
+- [x] Dashboard: business activity detail, daily/monthly/yearly/all-time net profit, signed target difference, 16-day comparison, Today default
