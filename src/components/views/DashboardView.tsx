@@ -25,8 +25,8 @@ interface DashboardViewProps {
 const money = (n: number) => `$${n.toFixed(2)}`;
 
 export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate, onOpenNewSale, onOpenNewExpense, onOpenNewIncome, onOpenReceivePayment, onOpenNewDelivery, onOpenNewAccount }) => {
-  const { currentUser, getTodayStats, getPeriodStats, sales, orders, incomes, expenses, products, purchases, returns, inventoryMovements, supplierPayments, transfers, auditLogs } = useStore();
-  const { todayNetProfit, todayRemainingTarget, todayTarget, targetProgressPct } = getTodayStats();
+  const { currentUser, getTodayStats, getPeriodStats, sales, orders, incomes, expenses, products, purchases, returns, inventoryMovements, supplierPayments, transfers, auditLogs, deliveries, cargoShipments } = useStore();
+  const { todayNetProfit, todayTarget, targetProgressPct } = getTodayStats();
   const { totalRemainingDebt, totalCashInHand, totalStockValueSelling } = getPeriodStats();
   const branches = useBranches();
   const [range, setRange] = useState<DateRange>(() => ({ from: new Date(), to: new Date() }));
@@ -174,11 +174,15 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate, onOpen
     returns.forEach(r => addActivity({ id: `return-${r.id}`, date: r.date, type: 'Return', title: r.returnNo, detail: `${r.customerName} · ${r.originalInvoiceNo} · ${r.reason}`, amount: -r.totalRefund, section: 'returns' }));
     inventoryMovements.forEach(m => addActivity({ id: `stock-${m.id}`, date: m.date, type: 'Stock movement', title: m.productName, detail: `${m.type} · ${m.quantityChange > 0 ? '+' : ''}${m.quantityChange} units · Balance ${m.stockAfter}${m.reason ? ` · ${m.reason}` : ''}`, section: 'inventory' }));
     supplierPayments.forEach(p => addActivity({ id: `supplier-payment-${p.id}`, date: `${p.date} ${p.time || ''}`, type: 'Supplier payment', title: p.paymentNo, detail: `${p.supplierName} · ${p.purchaseNo || ''} · ${p.accountName}`, amount: -p.amount, section: 'suppliers' }));
+    deliveries.forEach(d => addActivity({ id: `delivery-${d.id}`, date: d.assignedAt, type: 'Delivery', title: d.invoiceNo, detail: `${d.customerName} · ${d.status} · ${d.driverName || 'Unassigned'} · ${d.deliveryAddress} · Collected ${money(d.cashCollected)}`, section: 'delivery' }));
+    cargoShipments.forEach(c => addActivity({ id: `cargo-${c.id}`, date: c.date, type: 'Cargo', title: c.trackingNo, detail: `${c.customerName} · ${c.destinationCity} · ${c.status} · ${c.cargoCompany}`, amount: c.codAmount, section: 'cargo' }));
     transfers.forEach(t => addActivity({ id: `transfer-${t.id}`, date: t.date, type: 'Account transfer', title: `${t.fromAccountName} → ${t.toAccountName}`, detail: t.note || `Recorded by ${t.performedBy}`, amount: t.amount, section: 'accounts' }));
   }
   if (branchFilter === 'all') {
     incomes.forEach(i => addActivity({ id: `income-${i.id}`, date: i.date, type: 'Other income', title: i.title, detail: `${i.category} · ${i.depositedToAccountName}${i.notes ? ` · ${i.notes}` : ''}`, amount: i.amount, section: 'income' }));
     expenses.forEach(e => addActivity({ id: `expense-${e.id}`, date: e.date, type: 'Expense', title: e.title, detail: `${e.category}${e.adProductName ? ` · ${e.adProductName}` : ''} · ${e.paidFromAccountName}${e.notes ? ` · ${e.notes}` : ''}`, amount: -e.amount, section: 'expenses' }));
+    fin.fundTransfers.forEach(t => addActivity({ id: `fund-${t.id}`, date: t.createdAt || t.date, type: 'Petty cash', title: t.fromAccountName, detail: `Fund transfer · ${t.notes || 'No note'} · ${t.createdBy}`, amount: t.amount, section: 'pettycash' }));
+    fin.reconciliations.forEach(r => addActivity({ id: `reconciliation-${r.id}`, date: r.createdAt || r.date, type: 'EVC reconciliation', title: r.accountName, detail: `System ${money(r.ledgerBalance)} · Actual ${money(r.liveBalance)} · Difference ${money(r.difference)} · ${r.reason}`, section: 'evcrecon' }));
     auditLogs.forEach(a => addActivity({ id: `audit-${a.id}`, date: a.timestamp, type: 'System event', title: a.action, detail: `${a.target} · ${a.actor}${a.details ? ` · ${a.details}` : ''}`, section: 'settings' }));
   }
   activity.sort((a, b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id));
