@@ -3,6 +3,7 @@ import { StoreProvider, useStore } from "./context/StoreContext";
 import { Sidebar, NavSection } from "./components/layout/Sidebar";
 import { Header } from "./components/layout/Header";
 import { DashboardView } from "./components/views/DashboardView";
+import { OpeningBalances } from "./components/views/OpeningBalances";
 import { PosView } from "./components/views/PosView";
 import { ProductsView } from "./components/views/ProductsView";
 import { InventoryView } from "./components/views/InventoryView";
@@ -43,7 +44,7 @@ import { StockInsightsView } from "./components/views/StockInsightsView";
 import { canAccess, useStaffRole, ROLE_LABELS } from "./lib/roles";
 
 const MainApp: React.FC = () => {
-  const { convertOrderToSale, getOrderByPortalToken, registerExternalOrder, orders } = useStore();
+  const { convertOrderToSale, getOrderByPortalToken, registerExternalOrder, orders, products, sales, purchases, expenses, incomes, accounts } = useStore();
   const staffRole = useStaffRole();
   const [activeTab, setActiveTab] = useState<NavSection>("dashboard");
   // Sidebar wuu xirnaanayaa marka hore — wuxuu furmayaa oo kaliya marka badhanka Menu la riixo
@@ -274,6 +275,11 @@ const MainApp: React.FC = () => {
     setActiveTab("pos");
     setIsSidebarOpen(false);
   };
+
+  const openingNeeded = typeof window !== 'undefined' && localStorage.getItem('benadir_opening_complete_v1') !== 'true' &&
+    (localStorage.getItem('benadir_factory_reset_done') === 'true' ||
+      (!products.length && !orders.length && !sales.length && !purchases.length && !expenses.length && !incomes.length && accounts.every(a => a.balance === 0)));
+  if (openingNeeded && staffRole === 'owner') return <OpeningBalances />;
 
   return (
     <div className="flex h-screen bg-[#f8fafc] text-slate-800 antialiased overflow-hidden selection:bg-[#bef264] selection:text-black">
