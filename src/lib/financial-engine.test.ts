@@ -35,7 +35,7 @@ describe("monthly plan", () => {
 describe("daily target engine", () => {
   it("Test 1 — target fully met: no deficit, no surplus", () => {
     const r = computeEngine("2026-10-03", cfg, { "2026-10-03": BASE });
-    expect(r.today!.adjustedTarget).toBeCloseTo(3.22, 2);
+    expect(r.today!.adjustedTarget).toBeCloseTo(BASE, 2);
     expect(r.today!.deficit).toBe(0);
     expect(r.today!.surplus).toBe(0);
   });
@@ -44,30 +44,30 @@ describe("daily target engine", () => {
     const r = computeEngine("2026-10-04", cfg, { "2026-10-03": 2.0 });
     const d1 = r.activeCycle!.days[0];
     const d2 = r.activeCycle!.days[1];
-    expect(d1.deficit).toBeCloseTo(3.22 - 2.0, 2);
-    expect(d2.adjustedTarget).toBeCloseTo(3.22 + (3.22 - 2.0), 2); // ≈ 4.44
+    expect(d1.deficit).toBeCloseTo(BASE - 2.0, 2);
+    expect(d2.adjustedTarget).toBeCloseTo(BASE + (BASE - 2.0), 2);
   });
 
   it("Test 3 — target exceeded: surplus reduces next day", () => {
     const r = computeEngine("2026-10-04", cfg, { "2026-10-03": 5.0 });
     const d1 = r.activeCycle!.days[0];
     const d2 = r.activeCycle!.days[1];
-    expect(d1.surplus).toBeCloseTo(5.0 - 3.22, 2); // ≈ 1.78
-    expect(d2.adjustedTarget).toBeCloseTo(Math.max(0, 3.22 - (5.0 - 3.22)), 2); // ≈ 1.44
+    expect(d1.surplus).toBeCloseTo(5.0 - BASE, 2);
+    expect(d2.adjustedTarget).toBeCloseTo(Math.max(0, BASE - (5.0 - BASE)), 2);
   });
 
   it("Test 4 — surplus larger than next day target: target floors at $0, remainder carries", () => {
-    const r = computeEngine("2026-10-04", cfg, { "2026-10-03": 3.22 + 10 });
+    const r = computeEngine("2026-10-04", cfg, { "2026-10-03": BASE + 10 });
     const d2 = r.activeCycle!.days[1];
     expect(d2.adjustedTarget).toBe(0);
-    expect(d2.surplusCarryAfter).toBeCloseTo(10 - 3.22, 2); // ≈ 6.78
+    expect(d2.surplusCarryAfter).toBeCloseTo(10 - BASE, 2);
   });
 
   it("Test 5 — surplus covers prior deficit first", () => {
     // Day1: achieve 1.22 → deficit 2.00. Day2: achieve adjusted+5 → surplus 5, deficit gone.
     const r = computeEngine("2026-10-04", cfg, {
-      "2026-10-03": 3.22 - 2.0,
-      "2026-10-04": 3.22 + 2.0 + 5.0,
+      "2026-10-03": BASE - 2.0,
+      "2026-10-04": BASE + 2.0 + 5.0,
     });
     const d2 = r.activeCycle!.days[1];
     expect(d2.deficit).toBe(0);
