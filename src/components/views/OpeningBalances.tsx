@@ -3,6 +3,7 @@ import { Wallet, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useStore } from "@/context/StoreContext";
 import type { PaymentAccount } from "@/types";
+import { maskAccountNumber } from "@/utils/mask-account";
 
 type Entry = { kind: "Cash" | "Bank" | "EVC Plus" | "e-Dahab"; balance: string; bank: string; holder: string; number: string; phone: string };
 const blank = (kind: Entry["kind"] = "Cash"): Entry => ({ kind, balance: "", bank: "", holder: "", number: "", phone: "" });
@@ -21,7 +22,7 @@ export function OpeningBalances() {
     const accounts: Omit<PaymentAccount, "id">[] = entries.map(e => ({
       name: e.kind === "Bank" ? e.bank.trim() : e.kind,
       type: e.kind === "Bank" ? "Bank" : e.kind === "Cash" ? "Cash" : "Mobile Money",
-      accountNumber: e.number.trim() || undefined,
+      accountNumber: maskAccountNumber(e.number),
       accountHolder: e.holder.trim() || undefined,
       telephone: e.phone.trim() || undefined,
       balance: Number(e.balance), currency: "USD", isActive: true, isDefault: e.kind === "Cash",

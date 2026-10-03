@@ -4,6 +4,7 @@ import { branchTotalsFor } from "../lib/branch-store";
 import { computeEngine, getFinEngineState } from "../lib/financial-engine";
 import { buildDailyNetMap, businessDeliveryCost } from "../lib/daily-net";
 import { nextCode, uniqueCode } from "../utils/codes";
+import { maskAccountNumber } from "../utils/mask-account";
 import {
   Product,
   ProductCategory,
@@ -853,9 +854,9 @@ const INITIAL_ACCOUNTS: PaymentAccount[] = [
   },
   {
     id: "acc-evc",
-    name: "Hormuud EVC Plus (615001234)",
+    name: "Hormuud EVC Plus",
     type: "Mobile Money",
-    accountNumber: "*712*615001234#",
+    accountNumber: "••••1234",
     balance: 1420.0,
     currency: "USD",
   },
@@ -863,7 +864,7 @@ const INITIAL_ACCOUNTS: PaymentAccount[] = [
     id: "acc-premier",
     name: "Premier Bank Commercial",
     type: "Bank",
-    accountNumber: "PB-1049281",
+    accountNumber: "••••9281",
     balance: 8500.0,
     currency: "USD",
   },
@@ -871,7 +872,7 @@ const INITIAL_ACCOUNTS: PaymentAccount[] = [
     id: "acc-dahab",
     name: "Dahabshiil Bank eDahab",
     type: "Bank",
-    accountNumber: "DHB-883190",
+    accountNumber: "••••3190",
     balance: 2600.0,
     currency: "USD",
   },
@@ -1487,7 +1488,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [accounts, setAccounts] = useState<PaymentAccount[]>(() => {
     const saved = localStorage.getItem("benadir_accounts");
     return saved
-      ? JSON.parse(saved)
+      ? (JSON.parse(saved) as PaymentAccount[]).map((a) => ({
+          ...a,
+          accountNumber: maskAccountNumber(a.accountNumber),
+        }))
       : [
           {
             id: "acc-cash",

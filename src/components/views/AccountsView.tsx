@@ -16,6 +16,7 @@ import { useStore } from "../../context/StoreContext";
 import { Account, AccountTransfer } from "../../types";
 import { StatCard } from "../common/StatCard";
 import { Modal } from "../common/Modal";
+import { maskAccountNumber, displayAccountNumber } from "@/utils/mask-account";
 
 interface AccountsViewProps {
   onOpenTransfer: () => void;
@@ -45,7 +46,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
     addAccount({
       name: newAccName.trim(),
       type: newAccType,
-      accountNumber: newAccNumber.trim() || undefined,
+      accountNumber: maskAccountNumber(newAccNumber),
       balance: parseFloat(newAccBalance) || 0,
       currency: "USD",
       isActive: true,
@@ -161,7 +162,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
 
               <h3 className="font-bold text-slate-900 text-sm">{acc.name}</h3>
               {acc.accountNumber && (
-                <p className="text-[11px] font-mono text-slate-400 mt-0.5">{acc.accountNumber}</p>
+                <p className="text-[11px] font-mono text-slate-400 mt-0.5">{displayAccountNumber(acc.accountNumber)}</p>
               )}
 
               <div className="mt-4">
