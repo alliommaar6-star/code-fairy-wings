@@ -1487,7 +1487,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [accounts, setAccounts] = useState<PaymentAccount[]>(() => {
     const saved = localStorage.getItem("benadir_accounts");
     return saved
-      ? JSON.parse(saved)
+      ? (JSON.parse(saved) as PaymentAccount[]).map((a) => ({
+          ...a,
+          accountNumber: maskAccountNumber(a.accountNumber),
+        }))
       : [
           {
             id: "acc-cash",
